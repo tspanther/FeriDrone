@@ -60,7 +60,7 @@ class AutoLander():
         self.sVel = None
 
         # prepare velocity computation arrays
-        reactionTime = 0.1
+        reactionTime = 0.2
         self.velocitiesCompute = int(reactionTime / self.timeStep) # number of velocities we can afford to compute to estimate start velocity
         self.averageVelocities = numpy.zeros(self.velocitiesCompute) # velocities on first few (overlapping) time intervals
 

@@ -39,9 +39,9 @@ class GravitySim():
                  animate=False,         # animate the plots
                  timeDuration=10,       # seconds
                  timeStep=0.001,        # seconds
-                 snr_dB=10.0,           # power of signal over noise
+                 snr_dB=25.0,           # power of signal over noise
                  objectMass=0.4,        # kg
-                 objectMaxThrust=11.06,  # F (force of engines)
+                 objectMaxThrust=14.56,  # F (force of engines)
                  startHeight=20,         # meters (initial height)
                  startVelocity=-3,       # meters / seconds (initial velocity)
                  startThrust=0):        # percentage of maxThrust (initial force)
