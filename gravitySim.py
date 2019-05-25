@@ -39,11 +39,11 @@ class GravitySim():
                  animate=False,         # animate the plots
                  timeDuration=10,       # seconds
                  timeStep=0.001,        # seconds
-                 snr_dB=25.0,           # power of signal over noise
-                 objectMass=0.4,        # kg
-                 objectMaxThrust=14.56,  # F (force of engines)
-                 startHeight=20,         # meters (initial height)
-                 startVelocity=-3,       # meters / seconds (initial velocity)
+                 snr_dB=15.0,           # power of signal over noise
+                 objectMass=0.5,        # kg
+                 objectMaxThrust=11.06,  # F (force of engines)
+                 startHeight=10,         # meters (initial height)
+                 startVelocity=6,       # meters / seconds (initial velocity)
                  startThrust=0):        # percentage of maxThrust (initial force)
 
         self.simTimeIndex = 0    # index of time step in simulation
@@ -97,10 +97,7 @@ class GravitySim():
 
         autoLanderObj = self.AutoLanderClass(self.objectMass,
                                              self.objectMaxThrust,
-                                             self.objectNeutralThrust,
-                                             self.timeStep,
-                                             self.timeDuration,
-                                             self.snr_dB)
+                                             self.objectNeutralThrust)
         self.autoLanderObj = autoLanderObj
 
         ts_last_update = 0
