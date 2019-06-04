@@ -1,0 +1,6 @@
+Dolžina: 20s.
+Zaporedje vsakega joysticka:
+neutral -> počasi gor -> maks gor -> počasi dol -> neutral 
+-> počasi dol -> maks dol -> počasi gor -> neutral 
+-> počasi v levo -> maks levo -> počasi v desno -> neutral 
+-> počasi v desno -> maks desno -> počasi v levo -> neutral
