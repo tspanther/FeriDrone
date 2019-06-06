@@ -12,7 +12,6 @@ class Recorder:
         self.seconds = seconds
         self.remaining = seconds
         self.historicalValues = numpy.array([0, 0, 0, 0])
-        # self.airSimClient = airsim.MultirotorClient(???)
 
     def record(self):
         threads = []
@@ -28,6 +27,9 @@ class Recorder:
             threads[i].join()
 
         commThread.join()
+        
+        client.armDisarm(False)
+        client.enableApiControl(False)
 
         plt.plot(self.historicalValues.T)
         plt.show()
@@ -50,12 +52,12 @@ class Recorder:
             pitch = (kpDur[4] - kpDur[5]) / max_ * 0.5
             roll = (kpDur[6] - kpDur[7]) / max_ * 0.5
 
-            rcdata = airsim.RCData(0, pitch=pitch, roll=roll, throttle=throttle, yaw=yaw)
+            rcdata = airsim.RCData(0, pitch=pitch, roll=roll, throttle=throttle, yaw=yaw, is_initialized=True, is_valid=True)
+            global client
+            client.moveByRC(rcdata)
 
             # debug
             self.historicalValues = numpy.c_[self.historicalValues, [throttle, yaw, pitch, roll]]
-
-            # self.airSimClient.moveByRC(rcdata=rcdata)
 
     def recordKey(self, key, index):
         while(self.remaining > 0):
@@ -64,8 +66,16 @@ class Recorder:
             else:
                 self.keyPressDurations[index] = 0
             time.sleep(0.002)
+            
+client = None
 
 if __name__ == '__main__':
-    seconds = 10
+    client = airsim.MultirotorClient()
+    client.confirmConnection()
+    client.enableApiControl(True)
+    client.armDisarm(True)
+    client.moveByManualAsync(vx_max = 1E6, vy_max = 1E6, z_min = -1E6, duration = 1E10)
+    
+    seconds = 100
     recorder = Recorder(seconds)
-    recorder.record()       
+    recorder.record()

@@ -1,11 +1,7 @@
 import numpy
 import matplotlib.pyplot as plt
-from scipy.io import wavfile
 import pyaudio
 import time
-import sys
-import struct
-import wave
 import airsim
 import threading
 import queue
@@ -70,14 +66,14 @@ def thread_obdelava(q):
             for i in range(0, 8, 1):
                 kanali[i] = downs[i + 1] - ups[i]
             
-            """
-            Štefko::
-                MAX_KANAL = 70 ?
-                MIN_KANAL = 30 ?
-                RANGE = MAX_KANAL - MIN_KANAL
-                rcdata = airsim.rcData(throttle=(kanal[0] - MIN_KANAL)/RANGE, ...)
-                airsim.moveByRC(rcdata)
-            """
+            MAX_KANAL = 71
+            MIN_KANAL = 26
+            RANGE = MAX_KANAL - MIN_KANAL
+            global client
+            # throttle = (kanali[2] - MIN_KANAL)/RANGE-0.5
+            # print(throttle)
+            client.moveByRC(rcdata=airsim.RCData(throttle=(kanali[2] - MIN_KANAL)/RANGE-0.5, yaw=(kanali[3] - MIN_KANAL)/RANGE-0.5, pitch=(
+                kanali[1] - MIN_KANAL)/RANGE - 0.5, roll=(kanali[0] - MIN_KANAL)/RANGE - 0.5, is_initialized=True, is_valid=True))
 
             hist = numpy.c_[hist, kanali.T]
             for k in range(CHUNK):
@@ -90,6 +86,8 @@ def thread_obdelava(q):
             break
 
     return None
+
+client = None
 
 def find_offset(data):
     data = normaliziraj_vektorsko(numpy.fromstring(data, numpy.int16))
@@ -110,6 +108,12 @@ def find_offset(data):
 
 
 if __name__ == '__main__':
+    client = airsim.MultirotorClient()
+    client.confirmConnection()
+    client.enableApiControl(True)
+    client.armDisarm(True)
+    client.moveByManualAsync(vx_max = 1E6, vy_max = 1E6, z_min = -1E6, duration = 1E10)
+    
     p = pyaudio.PyAudio()
 
     stream = p.open(format=FORMAT,
@@ -124,6 +128,7 @@ if __name__ == '__main__':
 
     for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
         if i == 0:
+            data = stream.read(RATE)
             data = stream.read(CHUNK + 200)
             start = timer()
             offset = find_offset(data)
@@ -134,6 +139,16 @@ if __name__ == '__main__':
             offset %= CHUNK
             data = stream.read(offset) # junk, line up with
         else:
+            if (i % 1000 == 0):
+                data = stream.read(CHUNK + 200)
+                start = timer()
+                offset = find_offset(data)
+                print(offset)
+                end = timer()
+                offset -= int((end-start) * RATE)
+                print(end-start)
+                offset %= CHUNK
+                data = stream.read(offset) # junk, line up with
             try:
                 data = stream.read(CHUNK)
                 q.put(data)
