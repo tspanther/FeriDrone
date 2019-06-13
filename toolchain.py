@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import autolander
 import queue
 import logging
+from scipy.spatial import distance
 from timeit import default_timer as timer
 
 mode = False # False = manual, True = automatic
@@ -25,6 +26,7 @@ class Recorder():
             if win32api.GetAsyncKeyState(self.key):
                 global mode
                 mode = not mode
+                print(mode)
                 time.sleep(1)
             time.sleep(0.002)
             
@@ -56,6 +58,8 @@ def thread_obdelava(q):
     global hist
     global histVhod
     global done
+    
+    print("Obdelava")
 
     chunkN = 0
 
@@ -106,6 +110,10 @@ def thread_obdelava(q):
 
             chunkN += 1
             q.task_done()
+            
+            #if done == True:
+            #    break
+            
         except Exception as e:
             logging.exception("error get")
             break
@@ -128,7 +136,7 @@ def find_offset(data):
             return i - 180
 
     raise(Exception('niko je neumen'))
-    return -1
+    #return -1
 
 
 
@@ -191,19 +199,67 @@ if __name__ == '__main__':
                     logging.exception("error put")
         else:
             if (thread_obd is not None):
-                done = True
-                thread_obd.join()
+                if(done == False):
+                    done = True
+                    #thread_obd.join()
+                    print("Thread obd joined")
+                    # TODO: Where to join the newly created thread?
                 
-                q.join()
+                    q.join()
+                    al = autolander.AutoLander(0.55, 13, 0.4)
+                altitude = client.simGetVehiclePose().position.z_val
+                altitude = numpy.abs(altitude)
+                altitude = altitude
+                #print("X=" + str(client.simGetVehiclePose().position.x_val))
+                #print("Y=" + str(client.simGetVehiclePose().position.y_val))
+                #print("Z: " + str(altitude))
+                historicalAltitudes.append(altitude)
+                now = timer()
+                al.addHeightMeasurement(now-start, altitude)
+                throttle = al.thrust / (13 - 0.5)
+                #print("Thrust= " + str(al.thrust))
+                #print("Throttle= " + str(throttle))
+                client.moveByRC(airsim.RCData(throttle=throttle, is_initialized=True, is_valid=True))
                 
-                al = autolander.AutoLander(0.55, 13, 0.4)
+                
+                    
+                # Fly in a square.
+                '''start_x = client.simGetVehiclePose().position.x_val
+                start_y = client.simGetVehiclePose().position.y_val
+                start_xy = []
+                start_xy.append(start_x)
+                start_xy.append(start_y)
+                rcPitch = 0
+                rcRoll = 0
+                
+
+                
+                direction = 0
+                
+                while True:
+                    print("yy")
+                    x = client.simGetVehiclePose().position.x_val
+                    y = client.simGetVehiclePose().position.y_val
+                    xy = []
+                    xy.append(x)
+                    xy.append(y)
+                    
+                    if (distance.euclidean(start_xy, xy) >= 10 ):
+                        direction+=1
+                        direction = direction%4
+                        start_xy[0] = xy[0]
+                        start_xy[1] = xy[1]
+                        client.moveByRC(airsim.RCData(throttle=0, yaw=0,pitch=0, roll = 0, is_initialized=True, is_valid=True))
+                    if distance == 0:
+                        rcPitch = 0.5
+                    elif distance == 1:
+                        rcRoll = 0.5
+                    elif distance == 2:
+                        rcPitch = -0.5
+                    else:
+                        rcRoll = -0.5
+                    client.moveByRC(airsim.RCData(throttle=0.2, yaw=0, pitch=rcPitch, roll=rcRoll, is_initialized=True, is_valid=True))'''
             
-            altitude = client.simGetVehiclePose().z_val
-            historicalAltitudes.append(altitude)
-            now = timer()
-            al.addHeightMeasurement(now-start, altitude)
-            throttle = al.thrust / 13 - 0.5
-            client.moveByRC(airsim.RCData(throttle=throttle, is_initialized=True, is_valid=True))
             time.sleep(0.002)
 
     stream.stop_stream()

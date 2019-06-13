@@ -12,7 +12,7 @@ CHUNK = 882
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
 RATE = 44100
-RECORD_SECONDS = 2
+RECORD_SECONDS = 100
 
 q = queue.Queue()
 hist = numpy.zeros((8, 1))
