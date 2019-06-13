@@ -156,13 +156,13 @@ V zadnjem sklopu naloge je bilo potrebno implementirati ene vrste vmsenik, v kat
 
 Program je zapisan v jeziku Python. Implementacija se nahaja v `toolchain.py`
 
-### Uporaba
+#### Uporaba
 
 Ko upravljamo naš samoletalnik v AirSim okolju se vse supaj začne z ročnim upravljanjem našega samoletalnika - preko daljinca. Med izvedbo lahko spremenimo način iz ročnega v simuliranega tako, da pritisnemo `W`. Pri tem pristanemo v samodejnem načinu, kjer poskušamo naš samoletalnik s pomočjo Autloander-ja sam pristati.
 
 Med načinoma lahko poljubno cikliramo med izvajanjem simulacije.
 
-### Implementacija
+#### Implementacija
 
 Pri implementaciji te naloge smo si ogromno pomagali z že zapisano kodo. V prvem koraku je sledila implementacija vseh osnovnih zahtev - pripravili smo sistem, kjer smo vzeli kodo upravljanja samoletalnika z daljincem in integrirali Autolander.
 
@@ -174,13 +174,11 @@ Skupaj so prisotne tri ustvarjene niti. Ena nit skrbi za branje in vstavljanje p
 
 Sledi le še implementacija logike za to, da vemo v katerem načinu se nahajamo, katerega trenutno izvajamo in skrbimo za ustrezno zaključevanje niti, ter prehode med dvema načinoma.
 
-### Problemi
-
-Ko prehajamo med obema načinoma se včasih lahko zgodi, da se takoj od začetka ročno upravljanje ne odziva. Verjetno je problem z prisotnostjo junka in z sinhronizacijo.
+#### Problemi
 
 Simulirano pristajanje ne deluje kot pričakovano. Težava tiči v tem, da imamo spisan svoj simulator pristajanja, kjer imamo predpostavljen statičen gravitacijski pospešek, AirSim pa ne deluje po takem principu. 
 
-### Izboljšave
+#### Izboljšave
 
 * Implementacija Autolander-ja z PID kontrolerjem. 
 * Preselitev spremembe načina upravljanja na numerične tipke; bolj trivialno in več fleksibilnosti v primeru razširitve aplikacije.
