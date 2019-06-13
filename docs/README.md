@@ -32,6 +32,10 @@ Implementirali smo tudi istocasno oddajanje signalov saj za uspešno letenje sin
 Ko pridobimo prvi čas sprejema to predstavlja najkrajšo razdaljo od postaje. Prvi cas(t0) vzamemo kot zacetni cas štoparice. Iz njega dobimo podatek kako dolgo smo morali cakati na preostale signale postaj.
 Ta cas pomnožimo z hitrostjo širjenja signala(pf=343m/s), dobimo razliko v oddaljenosti od posamicne postaje.
 
+Zadnji del trilateracije
+
+Pri tej nalogi je šlo predvsem za združitev prejšnjih nalog projekta v celoto in izvedba naloge nad nekim realnim problemom, kjer so bile podane bazne postaje, meritve in časi. Iz teh podatkov je potem bilo potrebno izračunati lokacijo samoletalnika. Ko smo predelali vse meritve, je bilo pričakovano, da kot rezultat dobimo neko trajektorijo letečega objekta. Dobljeno trajektorijo smo potem primerjali z pravimi položaji in s pomočjo RMSE napake izračunali kakšna so odstopanja za različne stopnje prisotnega šuma.
+
 ### Komunikacija receiver - Airsim
 
 V sklopu naloge je bilo potrebno pripraviti vmesnik za upravljanje drona v simulatorju Airsim z daljincem (receiverjem).
@@ -148,4 +152,38 @@ Enake kot pri pilotiranju s controllerjem.
 
 ### Toolchain
 
-Štefko
+V zadnjem sklopu naloge je bilo potrebno implementirati ene vrste vmsenik, v katerega smo integrirali že opravljene naloge projekta, nalogo autolander in komunikacijo iz kontrolerja z AirSim simulatorjem. Zraven integracije je bilo potrebno dodati še način preklapljanja med tema dvema načinoma upravljanja samoletalnika.
+
+Program je zapisan v jeziku Python. Implementacija se nahaja v `toolchain.py`
+
+### Uporaba
+
+Ko upravljamo naš samoletalnik v AirSim okolju se vse supaj začne z ročnim upravljanjem našega samoletalnika - preko daljinca. Med izvedbo lahko spremenimo način iz ročnega v simuliranega tako, da pritisnemo `W`. Pri tem pristanemo v samodejnem načinu, kjer poskušamo naš samoletalnik s pomočjo Autloander-ja sam pristati.
+
+Med načinoma lahko poljubno cikliramo med izvajanjem simulacije.
+
+### Implementacija
+
+Pri implementaciji te naloge smo si ogromno pomagali z že zapisano kodo. V prvem koraku je sledila implementacija vseh osnovnih zahtev - pripravili smo sistem, kjer smo vzeli kodo upravljanja samoletalnika z daljincem in integrirali Autolander.
+
+V drugem koraku je bilo potrebno sestaviti mehanizem preklapljanja, kar smo si izposodili od alternitvnega upravljanja z samoletalnikom.
+
+V tretjem koraku je bilo potrebno prvi in drugi korak združiti skupaj. Pri tem je prišlo do rahle modifikacije kode, ki bo opisana v nadaljevanju. Pomemben koncept, ki smo ga tukaj uporabili je večnitno delovanje s katerim zagotavljamo brezhibnost delovanja preklopov. 
+
+Skupaj so prisotne tri ustvarjene niti. Ena nit skrbi za branje in vstavljanje podatkov, druga pa za obdelavo le teh. Koncept uporabljamo pri ročnem upravljanju samoletalnika - ko beremo podatke iz daljinca. Tretja nit preži nad spremembo načina upravljanja ob pritisku tipke.
+
+Sledi le še implementacija logike za to, da vemo v katerem načinu se nahajamo, katerega trenutno izvajamo in skrbimo za ustrezno zaključevanje niti, ter prehode med dvema načinoma.
+
+### Problemi
+
+Ko prehajamo med obema načinoma se včasih lahko zgodi, da se takoj od začetka ročno upravljanje ne odziva. Verjetno je problem z prisotnostjo junka in z sinhronizacijo.
+
+Simulirano pristajanje ne deluje kot pričakovano. Težava tiči v tem, da imamo spisan svoj simulator pristajanja, kjer imamo predpostavljen statičen gravitacijski pospešek, AirSim pa ne deluje po takem principu. 
+
+### Izboljšave
+
+* Implementacija Autolander-ja z PID kontrolerjem. 
+* Preselitev spremembe načina upravljanja na numerične tipke; bolj trivialno in več fleksibilnosti v primeru razširitve aplikacije.
+
+![(testingSuite_example)](drone_test.jpg)
+
