@@ -183,5 +183,5 @@ Simulirano pristajanje ne deluje kot pričakovano. Težava tiči v tem, da imamo
 * Implementacija Autolander-ja z PID kontrolerjem. 
 * Preselitev spremembe načina upravljanja na numerične tipke; bolj trivialno in več fleksibilnosti v primeru razširitve aplikacije.
 
-![(testingSuite_example)](drone_test.jpg)
+![(testingSuite_example)](drone_test.png)
 
