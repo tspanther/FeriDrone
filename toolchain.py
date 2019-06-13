@@ -33,13 +33,12 @@ class Recorder():
     def poor_mans_destructor(self):
         self.stop = True
         self.keyThread.join()
-        print("joined record thread")
             
 CHUNK = 882
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
 RATE = 44100
-RECORD_SECONDS = 100
+RECORD_SECONDS = 360
 
 q = None
 hist = numpy.zeros((8, 1))
@@ -58,8 +57,6 @@ def thread_obdelava(q):
     global hist
     global histVhod
     global done
-    
-    print("Obdelava")
 
     chunkN = 0
 
@@ -111,8 +108,10 @@ def thread_obdelava(q):
             chunkN += 1
             q.task_done()
             
-            #if done == True:
-            #    break
+            # The thread is running in an infinite loop, so I have to close it manually.
+            if done == True:
+                q = None
+                break
             
         except Exception as e:
             logging.exception("error get")
@@ -136,9 +135,6 @@ def find_offset(data):
             return i - 180
 
     raise(Exception('niko je neumen'))
-    #return -1
-
-
 
 if __name__ == '__main__':
     keyRecorder = Recorder()
@@ -158,12 +154,21 @@ if __name__ == '__main__':
                     frames_per_buffer=CHUNK)
 
     thread_obd = None
+    global al
     al = None
     start = timer()
+    hotSwap = False
     
     historicalAltitudes = []
 
     for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+        
+        if hotSwap is True and mode is False:
+            del al
+            hotSwap = False
+            done = False
+            thread_obd = None
+        
         if (mode == False):
             if (thread_obd is None):
                 q = queue.Queue()
@@ -201,29 +206,23 @@ if __name__ == '__main__':
             if (thread_obd is not None):
                 if(done == False):
                     done = True
-                    #thread_obd.join()
-                    print("Thread obd joined")
-                    # TODO: Where to join the newly created thread?
-                
+                    thread_obd.join()
+                    hotSwap = True
                     q.join()
                     al = autolander.AutoLander(0.55, 13, 0.4)
+                    
+                # Simulate landing.
                 altitude = client.simGetVehiclePose().position.z_val
                 altitude = numpy.abs(altitude)
                 altitude = altitude
-                #print("X=" + str(client.simGetVehiclePose().position.x_val))
-                #print("Y=" + str(client.simGetVehiclePose().position.y_val))
-                #print("Z: " + str(altitude))
                 historicalAltitudes.append(altitude)
                 now = timer()
                 al.addHeightMeasurement(now-start, altitude)
                 throttle = al.thrust / (13 - 0.5)
-                #print("Thrust= " + str(al.thrust))
-                #print("Throttle= " + str(throttle))
                 client.moveByRC(airsim.RCData(throttle=throttle, is_initialized=True, is_valid=True))
-                
-                
-                    
+                                  
                 # Fly in a square.
+                # TODO: The algorithm is not complete. There are some part missing from it, like maintaining height mechanism etc.
                 '''start_x = client.simGetVehiclePose().position.x_val
                 start_y = client.simGetVehiclePose().position.y_val
                 start_xy = []
