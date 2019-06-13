@@ -19,7 +19,18 @@ Potrebno je prenesti in zgraditi vsaj unreal projekt poljubnega okolja (Blocks -
 
 ### Trilateracija, različne oblike
 
-Stajnko
+V aplikaciji, ki je napisana v programskem jeziku Python, uporabnik najprej vnese X, Y, Z koordinate treh do deset baznih postaj, razdalje ter čase (prva in druga naloga: razdalje, tretja naloga: čase) predmeta oz. »drona« do vseh vnešenih baznih postaj.
+Aplikacija nato naredi matrike z vnesenimi koordinatami, katere predstavljajo točke, kjer je bazna postaja. 
+Uporabljamo Gram-Schmidtov postopek, da dobimo nove tocke. Izracunamo vektorje ter njihove vektorske produkte.
+Ker smo vektorje tudi normalizirali lahko izracunamo skalarne produkte kateri nam bodo pomagali pridobiti koordinate v kartezicnem koordinatnem sistemu.
+Pozicija v kartezicnem prostoru
+    `X = (r1**2 - r2**2 + d**2) / (2 * d)`
+    `Y = (r1**2 - r3**2 + i**2 + j**2) / (2 * j) - (i / j) * X`
+    `Z = math.sqrt(abs(r1**2 - X**2 - Y**2)) * Zn`
+Ker pa s pomocjo treh baznih postaj ne vemo tocne pozicije, ker kadar so bazne postaje na isti višini nam to prestavlja dvoumnost. Težavo smo odpravili z četrto referenèno postajo ter oddaljenostjo od nje. (2. Naloga)
+Implementirali smo tudi istocasno oddajanje signalov saj za uspešno letenje sinhronizirane podatke. (3. naloga)
+Ko pridobimo prvi čas sprejema to predstavlja najkrajšo razdaljo od postaje. Prvi cas(t0) vzamemo kot zacetni cas štoparice. Iz njega dobimo podatek kako dolgo smo morali cakati na preostale signale postaj.
+Ta cas pomnožimo z hitrostjo širjenja signala(pf=343m/s), dobimo razliko v oddaljenosti od posamicne postaje.
 
 ### Komunikacija receiver - Airsim
 
