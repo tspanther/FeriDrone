@@ -185,3 +185,41 @@ Simulirano pristajanje ne deluje kot pričakovano. Težava tiči v tem, da imamo
 
 ![(testingSuite_example)](drone_test.png)
 
+### Nacrt za tretji letnik
+
+Osnoven cilj, ki smo si ga zadali, je upravljanje drona s kontrolerjem, ki omogoca preklop v avtonomen nacin, v katerem dron pristane varno, pravokotno na tla. Ob letu bo dron zbiral in posredoval podatke pospeskometra, ziroskopa in magnetometra (nagnjenost, usmerjenost), proximity senzorjev (oddaljenost od tal - tudi v pomoc pri pristajanju, oddaljenosti od 4 postaj - za trilateracijo). Zbrane podatke bomo obdelali / vizualizirali na PCju.
+
+#### Vgrajeni sistemi, SRDS
+
+##### Upravljanje letenja
+
+- dekodiranje signala s controllerja, upravljanje s propelerji na podlagi dekodiranega signala.
+- branje s proximity senzorja za visino
+- ko prejme dron signal za avtonomen pristanek, upravljanje s propelerji - algoritem za pristajanje (spisan v python, prepis v C)
+
+##### Komunikacija z zunanjim svetom
+
+- branje podatkov s periferije (UART, SPI, I2C);
+    - proximity senzorji
+    - pospeskometer, ziroskop, magnetometer
+- posiljanje podatkov po brezzicni povezavi na PC
+
+#### Multimedia
+
+- zasnovanje paketa/paketov za lightweight in ucinkovit prenos podatkov z drona na pc (stiskanje/posiljanje razlik od prejsnjega stanja?)
+- dekodiranje paketov
+- format za shranjevanje vseh podatkov o poti - ta datoteka bo vhod v program, ki bo pot vizualiziral
+
+#### Racunalniska grafika
+
+Vizualizacija poti.
+
+- animacija dronove poti, razlicni atributi z barvami
+    - lokacija - trilateracija
+    - vektor smeri - pospeskometer, magnetometer - kam gleda "kljun"
+    - hitrost
+    - visina
+
+> trenutno nacrtujemo uporabiti za povrsje neko "demo" teksturo. Mozno bi bilo uporabiti tudi k tlom usmerjeno preprosto kamero, ki bi sluzila za zajemanje realnih tekstur
+> trenutno nacrtujemo smatrati povrsje kot ravninsko. mozna (ambiciozna) razsiritev bi bila uporaba LiDAR senzorja za zajemanje realnega povrsja
+
