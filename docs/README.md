@@ -234,11 +234,11 @@ Vizualizacija poti.
 V podatkih pricakujemo veliko suma, zato bo potrebno podatke najprej filtrirati (low-pass filter).
 
 Mozne razsiritve
-> trenutno nacrtujemo uporabiti za povrsje neko "demo" teksturo. Mozno bi bilo uporabiti tudi k tlom usmerjeno preprosto kamero, ki bi sluzila za zajemanje realnih tekstur
-> trenutno nacrtujemo smatrati povrsje kot ravninsko. mozna (ambiciozna) razsiritev bi bila uporaba LiDAR senzorja za zajemanje realnega povrsja
-> trenutno nameravamo implementirati vizualizacijo kot delno interaktivno animacijo (3rd person premikanje kamere), animacija se zgradi iz datoteke, v kateri so zapisane koordinate, usmerjenost in drugi podatki z drona. Mozna razsiritev je realno-casovno vizualiziranje drona, s sprotno obdelavo podatkov.
+- trenutno nacrtujemo uporabiti za povrsje neko "demo" teksturo. Mozno bi bilo uporabiti tudi k tlom usmerjeno preprosto kamero, ki bi sluzila za zajemanje realnih tekstur
+- trenutno nacrtujemo smatrati povrsje kot ravninsko. mozna (ambiciozna) razsiritev bi bila uporaba LiDAR senzorja za zajemanje realnega povrsja
+- trenutno nameravamo implementirati vizualizacijo kot delno interaktivno animacijo (3rd person premikanje kamere), animacija se zgradi iz datoteke, v kateri so zapisane koordinate, usmerjenost in drugi podatki z drona. Mozna razsiritev je realno-casovno vizualiziranje drona, s sprotno obdelavo podatkov.
 
-Razdelitev dela pri racunalniski grafiki:
+##### Razdelitev dela pri racunalniski grafiki:
 
 Aljaz:
 - uvoz, priprava modela iz blenderja
@@ -250,9 +250,9 @@ Stefko:
 
 Niko:
 - obdelava podatkov (filtriranje, interpoliranje)
-1st person view:
+- 1st person view:
     - osvezevanje upVec, lookAt vektorjev na podlagi toka podatkov iz datoteke
-3rd person view:
+- 3rd person view:
     - osvezevanje campPos, lookAt, upVec vektorjev na podlagi uporabnikovega vhoda (krmiljenja kamere)
     - preklop med nacinoma
 
