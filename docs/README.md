@@ -4,6 +4,10 @@
 
 `git clone https://github.com/tspanther/FeriDrone.git`
 
+### python
+
+`conda env create -f environment.yml`
+
 ## Namestitev okolja AirSim
 
 Potrebno je prenesti in zgraditi [projekt AirSim](https://github.com/Microsoft/AirSim).
