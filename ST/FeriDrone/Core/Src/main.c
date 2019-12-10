@@ -65,6 +65,9 @@ uint8_t spi1_beriRegister(uint8_t);
 void spi1_beriRegistre(uint8_t, uint8_t*, uint8_t);
 void spi1_pisiRegister(uint8_t, uint8_t);
 void initL3GD20(void);
+uint8_t i2c1_pisiRegister(uint8_t, uint8_t, uint8_t);
+void i2c1_beriRegistre(uint8_t, uint8_t, uint8_t*, uint8_t);
+void initLSM303DLHC(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -103,6 +106,27 @@ void initL3GD20() {
 			;
 
 	spi1_pisiRegister(0x20, 0x0F);
+}
+
+uint8_t i2c1_pisiRegister(uint8_t naprava, uint8_t reg, uint8_t podatek) {
+	naprava <<= 1;
+	return HAL_I2C_Mem_Write(&hi2c1, naprava, reg, I2C_MEMADD_SIZE_8BIT,
+			&podatek, 1, 10);
+}
+
+void i2c1_beriRegistre(uint8_t naprava, uint8_t reg, uint8_t *podatek,
+		uint8_t dolzina) {
+	if ((dolzina > 1) && (naprava == 0x19))
+		reg |= 0x80;
+	naprava <<= 1;
+	HAL_I2C_Mem_Read(&hi2c1, naprava, reg, I2C_MEMADD_SIZE_8BIT, podatek,
+			dolzina, dolzina);
+}
+
+void initLSM303DLHC() {
+	HAL_Delay(10);
+	i2c1_pisiRegister(0x19, 0x20, 0x27);
+	i2c1_pisiRegister(0x19, 0x23, 0x88);
 }
 /* USER CODE END 0 */
 
@@ -143,19 +167,24 @@ int main(void) {
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
 	initL3GD20();
 
-	int16_t meritev[4];
+	__HAL_I2C_ENABLE(&hi2c1);
+	initLSM303DLHC();
+
+	uint8_t meritev_size = 7;
+	int16_t meritev[meritev_size];
 	meritev[0] = 0xaaab;
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
-
-	while (1) {
-		/* USER CODE BEGIN WHILE */
-		spi1_beriRegistre(0x28, (uint8_t*)&meritev[1], 6);
-		CDC_Transmit_FS((uint8_t*)&meritev, 8);
+	/* USER CODE BEGIN WHILE */
+	while(1) {
+		spi1_beriRegistre(0x28, (uint8_t*) &meritev[1], 6);
+		i2c1_beriRegistre(0x19, 0x28, (uint8_t*) &meritev[4], 6);
+		CDC_Transmit_FS((uint8_t*) &meritev, meritev_size * sizeof(int16_t));
 		HAL_Delay(10);
-		/* USER CODE END WHILE */
 	}
+	/* USER CODE END WHILE */
+
 	/* USER CODE BEGIN 3 */
 	/* USER CODE END 3 */
 }
@@ -222,7 +251,7 @@ static void MX_I2C1_Init(void) {
 
 	/* USER CODE END I2C1_Init 1 */
 	hi2c1.Instance = I2C1;
-	hi2c1.Init.ClockSpeed = 100000;
+	hi2c1.Init.ClockSpeed = 400000;
 	hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
 	hi2c1.Init.OwnAddress1 = 0;
 	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
