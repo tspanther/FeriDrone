@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+        <!-- Učinkovito skaliranje -->
+        <meta name="viewport"
+            content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+        <title>Stinger - vizualizacija</title>
+        <script src="https://cesium.com/downloads/cesiumjs/releases/1.64/Build/Cesium/Cesium.js"></script>
+        <link href="https://cesium.com/downloads/cesiumjs/releases/1.64/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+        <link rel="stylesheet" href="style.css" media="screen">
+    </head>
+    <body>
+        <!-- Cesium viewer -->
+        <div id="cesiumContainer"></div>
+
+          <!-- Meni -->
+          <div class="backdrop" id="menu">
+              <h2>Konfiguracija</h2>
+              <span><strong>Izbira kamere</strong></span>
+              <div class="nowrap">
+                  <input id="freeMode" name="source" type="radio" checked/>
+                  <label for="freeMode">Prosto</label>
+              </div>
+              <div class="nowrap">
+                  <input id="droneMode" name="source" type="radio"/>
+                  <label for="droneMode">Pogled samoletalnika</label>
+              </div>
+          </div>
+      <!-- Skripte -->
+      <script src="script.js"></script>    
+    </body>
+</html>
+
+
