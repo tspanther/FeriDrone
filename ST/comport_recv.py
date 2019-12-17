@@ -1,6 +1,6 @@
 import serial
 
-FREQ = 100
+FREQ = 60
 DURATION = 10
 PORT = 'COM3'
 OTPT_FILE = 'helloworld'
@@ -10,14 +10,17 @@ with open('comport_recv_{}.csv'.format(OTPT_FILE), 'w') as fd:
     fd.write('index,header,gyrX,gyrY,gyrZ,accX,accY,accZ\n')
     while(True):
         temp = port.read(1)
-        if (temp == b'\xaa'):
+        if (temp == b'\xab'):
             temp = port.read(1)
             if (temp == b'\xaa'):
                 break
     data = port.read(12)
+    dataArr = []
     for i in range(FREQ * DURATION):
         data = port.read(14)
+        dataArr.append(data)
+    for i in range(FREQ * DURATION):
         pData = []
         for k in range(0,13,2):
-            pData.append(int.from_bytes(data[k:k+2], byteorder='big', signed=True))
+            pData.append(int.from_bytes(dataArr[i][k:k+2], byteorder='big', signed=True))
         fd.write(str(i) + "," + ",".join(str(x) for x in pData) + '\n')
