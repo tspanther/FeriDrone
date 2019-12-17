@@ -22,6 +22,7 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "usb_device.h"
+#include "MadgwickAHRS.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -194,20 +195,20 @@ int main(void) {
 	/* Create the thread(s) */
 	/* definition and creation of merjenjeNagiba */
 	const osThreadAttr_t merjenjeNagiba_attributes = { .name = "merjenjeNagiba",
-			.priority = (osPriority_t) osPriorityNormal, .stack_size = 256 };
+			.priority = (osPriority_t) osPriorityNormal, .stack_size = 512 };
 	merjenjeNagibaHandle = osThreadNew(StartMerjenjeNagiba, NULL,
 			&merjenjeNagiba_attributes);
 
 	/* definition and creation of trilateracija */
 	const osThreadAttr_t trilateracija_attributes = { .name = "trilateracija",
-			.priority = (osPriority_t) osPriorityNormal, .stack_size = 256 };
+			.priority = (osPriority_t) osPriorityNormal, .stack_size = 512 };
 	trilateracijaHandle = osThreadNew(StartTrilateracija, NULL,
 			&trilateracija_attributes);
 
 	/* definition and creation of pilotiranje */
 	const osThreadAttr_t pilotiranje_attributes =
 			{ .name = "pilotiranje", .priority =
-					(osPriority_t) osPriorityNormal, .stack_size = 256 };
+					(osPriority_t) osPriorityAboveNormal, .stack_size = 512 };
 	pilotiranjeHandle = osThreadNew(StartPilotiranje, NULL,
 			&pilotiranje_attributes);
 
@@ -500,6 +501,11 @@ static void MX_GPIO_Init(void) {
 void StartMerjenjeNagiba(void *argument) {
 	/* init code for USB_DEVICE */
 	MX_USB_DEVICE_Init();
+	/* USER CODE BEGIN 5 */
+	float freq = madgwick_freq;
+	float delay = 1000.0f / freq;
+	uint32_t ticksDelay = (uint32_t)(delay / portTICK_PERIOD_MS);
+
 	__HAL_SPI_ENABLE(&hspi1);
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
 	initL3GD20();
@@ -510,13 +516,15 @@ void StartMerjenjeNagiba(void *argument) {
 	uint8_t meritev_size = 7;
 	int16_t meritev[meritev_size];
 	meritev[0] = 0xaaab;
-	/* USER CODE BEGIN 5 */
 	/* Infinite loop */
 	for (;;) {
-		spi1_beriRegistre(0x28, (uint8_t*) &meritev[1], 6);
-		i2c1_beriRegistre(0x19, 0x28, (uint8_t*) &meritev[4], 6);
+		spi1_beriRegistre(0x28, (uint8_t*) &meritev[1], 6); // gyros
+		i2c1_beriRegistre(0x19, 0x28, (uint8_t*) &meritev[4], 6); // accel
+		//TODO: branje magnetometra, pretvorba podatkov, klic madgwick, kompresija podatkov
+		//MadgwickAHRSupdate(-meritev[1], meritev[2], meritev[3], meritev[4], meritev[5], meritev[6], meritev[7], meritev[8], meritev[9]);
+
 		CDC_Transmit_FS((uint8_t*) &meritev, meritev_size * sizeof(int16_t));
-		osDelay(100);
+		osDelay(ticksDelay);
 	}
 	/* USER CODE END 5 */
 }
