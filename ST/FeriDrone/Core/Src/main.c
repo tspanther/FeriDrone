@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -49,6 +50,9 @@ I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
 
+osThreadId_t merjenjeNagibaHandle;
+osThreadId_t trilateracijaHandle;
+osThreadId_t pilotiranjeHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -60,6 +64,10 @@ static void MX_I2C1_Init(void);
 static void MX_I2S2_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
+void StartMerjenjeNagiba(void *argument);
+void StartTrilateracija(void *argument);
+void StartPilotiranje(void *argument);
+
 /* USER CODE BEGIN PFP */
 uint8_t spi1_beriRegister(uint8_t);
 void spi1_beriRegistre(uint8_t, uint8_t*, uint8_t);
@@ -161,27 +169,61 @@ int main(void) {
 	MX_I2S2_Init();
 	MX_I2S3_Init();
 	MX_SPI1_Init();
-	MX_USB_DEVICE_Init();
 	/* USER CODE BEGIN 2 */
-	__HAL_SPI_ENABLE(&hspi1);
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
-	initL3GD20();
 
-	__HAL_I2C_ENABLE(&hi2c1);
-	initLSM303DLHC();
-
-	uint8_t meritev_size = 7;
-	int16_t meritev[meritev_size];
-	meritev[0] = 0xaaab;
 	/* USER CODE END 2 */
+
+	osKernelInitialize();
+
+	/* USER CODE BEGIN RTOS_MUTEX */
+	/* add mutexes, ... */
+	/* USER CODE END RTOS_MUTEX */
+
+	/* USER CODE BEGIN RTOS_SEMAPHORES */
+	/* add semaphores, ... */
+	/* USER CODE END RTOS_SEMAPHORES */
+
+	/* USER CODE BEGIN RTOS_TIMERS */
+	/* start timers, add new ones, ... */
+	/* USER CODE END RTOS_TIMERS */
+
+	/* USER CODE BEGIN RTOS_QUEUES */
+	/* add queues, ... */
+	/* USER CODE END RTOS_QUEUES */
+
+	/* Create the thread(s) */
+	/* definition and creation of merjenjeNagiba */
+	const osThreadAttr_t merjenjeNagiba_attributes = { .name = "merjenjeNagiba",
+			.priority = (osPriority_t) osPriorityNormal, .stack_size = 256 };
+	merjenjeNagibaHandle = osThreadNew(StartMerjenjeNagiba, NULL,
+			&merjenjeNagiba_attributes);
+
+	/* definition and creation of trilateracija */
+	const osThreadAttr_t trilateracija_attributes = { .name = "trilateracija",
+			.priority = (osPriority_t) osPriorityNormal, .stack_size = 256 };
+	trilateracijaHandle = osThreadNew(StartTrilateracija, NULL,
+			&trilateracija_attributes);
+
+	/* definition and creation of pilotiranje */
+	const osThreadAttr_t pilotiranje_attributes =
+			{ .name = "pilotiranje", .priority =
+					(osPriority_t) osPriorityNormal, .stack_size = 256 };
+	pilotiranjeHandle = osThreadNew(StartPilotiranje, NULL,
+			&pilotiranje_attributes);
+
+	/* USER CODE BEGIN RTOS_THREADS */
+	/* add threads, ... */
+	/* USER CODE END RTOS_THREADS */
+
+	/* Start scheduler */
+	osKernelStart();
+
+	/* We should never get here as control is now taken by the scheduler */
 
 	/* Infinite loop */
 	/* USER CODE BEGIN WHILE */
-	while(1) {
-		spi1_beriRegistre(0x28, (uint8_t*) &meritev[1], 6);
-		i2c1_beriRegistre(0x19, 0x28, (uint8_t*) &meritev[4], 6);
-		CDC_Transmit_FS((uint8_t*) &meritev, meritev_size * sizeof(int16_t));
-		HAL_Delay(10);
+	while (1) {
+
 	}
 	/* USER CODE END WHILE */
 
@@ -447,6 +489,89 @@ static void MX_GPIO_Init(void) {
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartMerjenjeNagiba */
+/**
+ * @brief  Function implementing the merjenjeNagiba thread.
+ * @param  argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartMerjenjeNagiba */
+void StartMerjenjeNagiba(void *argument) {
+	/* init code for USB_DEVICE */
+	MX_USB_DEVICE_Init();
+	__HAL_SPI_ENABLE(&hspi1);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+	initL3GD20();
+
+	__HAL_I2C_ENABLE(&hi2c1);
+	initLSM303DLHC();
+
+	uint8_t meritev_size = 7;
+	int16_t meritev[meritev_size];
+	meritev[0] = 0xaaab;
+	/* USER CODE BEGIN 5 */
+	/* Infinite loop */
+	for (;;) {
+		spi1_beriRegistre(0x28, (uint8_t*) &meritev[1], 6);
+		i2c1_beriRegistre(0x19, 0x28, (uint8_t*) &meritev[4], 6);
+		CDC_Transmit_FS((uint8_t*) &meritev, meritev_size * sizeof(int16_t));
+		osDelay(100);
+	}
+	/* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_StartTrilateracija */
+/**
+ * @brief Function implementing the trilateracija thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartTrilateracija */
+void StartTrilateracija(void *argument) {
+	/* USER CODE BEGIN StartTrilateracija */
+	/* Infinite loop */
+	for (;;) {
+		osDelay(100);
+	}
+	/* USER CODE END StartTrilateracija */
+}
+
+/* USER CODE BEGIN Header_StartPilotiranje */
+/**
+ * @brief Function implementing the pilotiranje thread.
+ * @param argument: Not used
+ * @retval None
+ */
+/* USER CODE END Header_StartPilotiranje */
+void StartPilotiranje(void *argument) {
+	/* USER CODE BEGIN StartPilotiranje */
+	/* Infinite loop */
+	for (;;) {
+		osDelay(100);
+	}
+	/* USER CODE END StartPilotiranje */
+}
+
+/**
+ * @brief  Period elapsed callback in non blocking mode
+ * @note   This function is called  when TIM10 interrupt took place, inside
+ * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+ * a global variable "uwTick" used as application time base.
+ * @param  htim : TIM handle
+ * @retval None
+ */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
+	/* USER CODE BEGIN Callback 0 */
+
+	/* USER CODE END Callback 0 */
+	if (htim->Instance == TIM10) {
+		HAL_IncTick();
+	}
+	/* USER CODE BEGIN Callback 1 */
+
+	/* USER CODE END Callback 1 */
+}
 
 /**
  * @brief  This function is executed in case of error occurrence.
