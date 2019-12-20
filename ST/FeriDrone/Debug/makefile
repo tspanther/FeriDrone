@@ -17,6 +17,8 @@ RM := rm -rf
 -include Middlewares/ST/STM32_USB_Device_Library/Core/Src/subdir.mk
 -include Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/subdir.mk
 -include Drivers/STM32F4xx_HAL_Driver/Src/subdir.mk
+-include Core/VL53L0X_1.0.2/Api/platform/src/subdir.mk
+-include Core/VL53L0X_1.0.2/Api/core/src/subdir.mk
 -include Core/Startup/subdir.mk
 -include Core/Src/subdir.mk
 -include subdir.mk
@@ -46,7 +48,7 @@ all: FeriDrone.elf secondary-outputs
 
 # Tool invocations
 FeriDrone.elf: $(OBJS) $(USER_OBJS) C:\Users\Niko-AMD\Documents\Drone\FeriDrone\ST\FeriDrone\STM32F411VETX_FLASH.ld
-	arm-none-eabi-gcc -o "FeriDrone.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\Niko-AMD\Documents\Drone\FeriDrone\ST\FeriDrone\STM32F411VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="FeriDrone.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "FeriDrone.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\Niko-AMD\Documents\Drone\FeriDrone\ST\FeriDrone\STM32F411VETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="FeriDrone.map" -Wl,--gc-sections -static -L"C:\Program Files (x86)\Windows Kits\10\Include\10.0.18362.0\um" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
