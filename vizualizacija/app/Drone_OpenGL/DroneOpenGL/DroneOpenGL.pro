@@ -7,12 +7,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    objloader.cpp \
-    widgetopengldraw.cpp
+        objekt.cpp \
+        widgetopengldraw.cpp
 
 HEADERS  += mainwindow.h \
-    objloader.hpp \
-    widgetopengldraw.h
+        objekt.h \
+        widgetopengldraw.h
 
 FORMS    += mainwindow.ui
 
@@ -20,9 +20,8 @@ QMAKE_CXXFLAGS += -std=c++11
 QMAKE_CXXFLAGS += -std=c++0x
 CONFIG += c++11
 
-# Spremenjeno.
-INCLUDEPATH += C:\libs_and_includes\Other\glm
+INCLUDEPATH += ../../lib/glm/
 
 DISTFILES += \
-    fsencilnik.frag \
-    vsencilnik.vert
+    fshader.frag \
+    vshader.vert
