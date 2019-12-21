@@ -22,8 +22,6 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "usb_device.h"
-#include "MadgwickAHRS.h"
-#include "vl53l0x_api_core.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -85,6 +83,44 @@ void initLSM303DLHC(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+VL53L0X_Error InitDevice(VL53L0X_Dev_t *pMyDevice) {
+  VL53L0X_Error Status = VL53L0X_ERROR_NONE;
+  uint8_t VhvSettings, PhaseCal, isApertureSpads;
+  uint32_t refSpadCount;
+
+  if (Status == VL53L0X_ERROR_NONE)
+    Status = VL53L0X_DataInit(pMyDevice);
+  // if (Status != VL53L0X_ERROR_NONE)
+  //   return Status;
+  // debug_LED(0xf);
+
+  if (Status == VL53L0X_ERROR_NONE)
+    Status = VL53L0X_StaticInit(pMyDevice);
+  // if (Status != VL53L0X_ERROR_NONE)
+  //   return Status;
+  // debug_LED(0xf);
+
+  if (Status == VL53L0X_ERROR_NONE)
+    Status = VL53L0X_PerformRefSpadManagement(pMyDevice, &refSpadCount, &isApertureSpads); // Device Initialization
+  // if (Status != VL53L0X_ERROR_NONE)
+  //   return Status;
+  // debug_LED(0xf);
+
+  if (Status == VL53L0X_ERROR_NONE)
+    Status = VL53L0X_PerformRefCalibration(pMyDevice, &VhvSettings, &PhaseCal);
+  // if (Status != VL53L0X_ERROR_NONE)
+  //   return Status;
+  // debug_LED(0xf);
+
+  if (Status == VL53L0X_ERROR_NONE)
+    Status = VL53L0X_SetDeviceMode(pMyDevice, VL53L0X_DEVICEMODE_CONTINUOUS_RANGING);
+  // if (Status != VL53L0X_ERROR_NONE)
+  //   return Status;
+  // debug_LED(0xf);
+
+  return Status;
+}
+
 uint8_t TOFS_write(uint8_t data) {
   uint8_t dev = (TOFS_devID << 1) | 0x01; // write
   return HAL_I2C_Master_Transmit(&hi2c1, dev, &data, 1, 10);
@@ -148,6 +184,21 @@ void i2c1_beriRegistre(uint8_t naprava, uint8_t reg, uint8_t *podatek,
 		reg |= 0x80;
 	naprava <<= 1;
 	HAL_I2C_Mem_Read(&hi2c1, naprava, reg, I2C_MEMADD_SIZE_8BIT, podatek,
+			dolzina, dolzina);
+}
+
+uint8_t i2c3_pisiRegister(uint8_t naprava, uint8_t reg, uint8_t podatek) {
+	naprava <<= 1;
+	return HAL_I2C_Mem_Write(&hi2c3, naprava, reg, I2C_MEMADD_SIZE_8BIT,
+			&podatek, 1, 10);
+}
+
+void i2c3_beriRegistre(uint8_t naprava, uint8_t reg, uint8_t *podatek,
+		uint8_t dolzina) {
+	if ((dolzina > 1) && (naprava == 0x19))
+		reg |= 0x80;
+	naprava <<= 1;
+	HAL_I2C_Mem_Read(&hi2c3, naprava, reg, I2C_MEMADD_SIZE_8BIT, podatek,
 			dolzina, dolzina);
 }
 
@@ -635,7 +686,7 @@ void StartPilotiranje(void *argument)
 	dev1.comms_type = 1;
 	dev1.comms_speed_khz = 400;
 	dev1.hi2c = &hi2c3;
-	dev1.id = 0;
+	//dev1.hi2c = &hi2c3;
 	InitDevice(&dev1);
 	/* Infinite loop */
 	for (;;) {
