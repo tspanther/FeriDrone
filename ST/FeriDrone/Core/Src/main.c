@@ -26,6 +26,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
+#include "vl53l0x_api.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,6 +37,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define TOFS_devID 0x29
+#define madgwick_freq 60.0f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -184,21 +186,6 @@ void i2c1_beriRegistre(uint8_t naprava, uint8_t reg, uint8_t *podatek,
 		reg |= 0x80;
 	naprava <<= 1;
 	HAL_I2C_Mem_Read(&hi2c1, naprava, reg, I2C_MEMADD_SIZE_8BIT, podatek,
-			dolzina, dolzina);
-}
-
-uint8_t i2c3_pisiRegister(uint8_t naprava, uint8_t reg, uint8_t podatek) {
-	naprava <<= 1;
-	return HAL_I2C_Mem_Write(&hi2c3, naprava, reg, I2C_MEMADD_SIZE_8BIT,
-			&podatek, 1, 10);
-}
-
-void i2c3_beriRegistre(uint8_t naprava, uint8_t reg, uint8_t *podatek,
-		uint8_t dolzina) {
-	if ((dolzina > 1) && (naprava == 0x19))
-		reg |= 0x80;
-	naprava <<= 1;
-	HAL_I2C_Mem_Read(&hi2c3, naprava, reg, I2C_MEMADD_SIZE_8BIT, podatek,
 			dolzina, dolzina);
 }
 
@@ -638,15 +625,15 @@ void StartMerjenjeNagiba(void *argument)
 	__HAL_I2C_ENABLE(&hi2c1);
 	initLSM303DLHC();
 
-	uint8_t meritev_size = 7;
+	uint8_t meritev_size = 10;
 	int16_t meritev[meritev_size];
 	meritev[0] = 0xaaab;
 	/* Infinite loop */
 	for (;;) {
 		spi1_beriRegistre(0x28, (uint8_t*) &meritev[1], 6); // gyros
 		i2c1_beriRegistre(0x19, 0x28, (uint8_t*) &meritev[4], 6); // accel
-		//TODO: branje magnetometra, pretvorba podatkov, klic madgwick, kompresija podatkov
-		//MadgwickAHRSupdate(-meritev[1], meritev[2], meritev[3], meritev[4], meritev[5], meritev[6], meritev[7], meritev[8], meritev[9]);
+		i2c1_beriRegistre(0x3c, 0x03, (uint8_t*) &meritev[7], 6); // magnet
+		MadgwickAHRSupdate(-meritev[1], meritev[2], meritev[3], meritev[4], meritev[5], meritev[6], meritev[7], meritev[8], meritev[9]);
 
 		CDC_Transmit_FS((uint8_t*) &meritev, meritev_size * sizeof(int16_t));
 		osDelay(ticksDelay);
@@ -681,6 +668,8 @@ void StartTrilateracija(void *argument)
 void StartPilotiranje(void *argument)
 {
   /* USER CODE BEGIN StartPilotiranje */
+	/*
+	__HAL_I2C_ENABLE(&hi2c3);
 	VL53L0X_Dev_t dev1;
 	dev1.I2cDevAddr = TOFS_devID;
 	dev1.comms_type = 1;
@@ -690,8 +679,10 @@ void StartPilotiranje(void *argument)
 	InitDevice(&dev1);
 	/* Infinite loop */
 	for (;;) {
+		/*
 		uint8_t buffer[4];
 		VL53L0X_ReadMulti(&dev1, 0xC0, buffer + 1, 3);
+		*/
 		osDelay(2000);
 	}
   /* USER CODE END StartPilotiranje */
