@@ -4,8 +4,9 @@ import os
 
 SHOW = False
 SAVE = True
-FILE = 'C:/Users/Niko-AMD/Documents/Drone/FeriDrone/ST/comport_recv_helloworld'
-PLOTS = [['header'],['gyrX','gyrY','gyrZ'],['accX','accY','accZ']]
+FILE = 'C:/Users/Niko-AMD/Documents/Drone/FeriDrone/ST/comport_recv_3float'
+#PLOTS = [['header'],['gyrX','gyrY','gyrZ'],['accX','accY','accZ']]
+PLOTS = [['roll','pitch','yaw']]
 
 df = pd.read_csv(FILE + '.csv')
 df.plot(subplots=True)

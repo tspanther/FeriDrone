@@ -27,6 +27,8 @@
 /* USER CODE BEGIN Includes */
 #include "usbd_cdc_if.h"
 #include "vl53l0x_api.h"
+#include "math.h"
+#include "MadgwickAHRS.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -37,7 +39,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define TOFS_devID 0x29
-#define madgwick_freq 60.0f
+//#define madgwick_freq 60.0f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -79,7 +81,7 @@ void spi1_beriRegistre(uint8_t, uint8_t*, uint8_t);
 void spi1_pisiRegister(uint8_t, uint8_t);
 void initL3GD20(void);
 uint8_t i2c1_pisiRegister(uint8_t, uint8_t, uint8_t);
-void i2c1_beriRegistre(uint8_t, uint8_t, uint8_t*, uint8_t);
+void i2c1_beriRegistre(uint8_t, uint8_t, uint8_t*, uint8_t, uint8_t);
 void initLSM303DLHC(void);
 /* USER CODE END PFP */
 
@@ -181,18 +183,19 @@ uint8_t i2c1_pisiRegister(uint8_t naprava, uint8_t reg, uint8_t podatek) {
 }
 
 void i2c1_beriRegistre(uint8_t naprava, uint8_t reg, uint8_t *podatek,
-		uint8_t dolzina) {
+		uint8_t dolzina, uint8_t suci) {
 	if ((dolzina > 1) && (naprava == 0x19))
 		reg |= 0x80;
-	naprava <<= 1;
+	naprava <<= suci;
 	HAL_I2C_Mem_Read(&hi2c1, naprava, reg, I2C_MEMADD_SIZE_8BIT, podatek,
 			dolzina, dolzina);
 }
 
 void initLSM303DLHC() {
 	HAL_Delay(10);
-	i2c1_pisiRegister(0x19, 0x20, 0x27);
-	i2c1_pisiRegister(0x19, 0x23, 0x88);
+	i2c1_pisiRegister(0x19, 0x20, 0x57); // accel; 0101 speed (100hz), 0 low power enable (no), 111 enable axis xyz
+	i2c1_pisiRegister(0x19, 0x23, 0x88); // accel; 1(7); output registers not updated until MSB and LSB reading, 1(3); high resolution
+	i2c1_pisiRegister(0x3c, 0x00, 0x18); // magnet 75hz
 }
 /* USER CODE END 0 */
 
@@ -504,10 +507,10 @@ static void MX_SPI1_Init(void)
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
+  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -614,6 +617,7 @@ void StartMerjenjeNagiba(void *argument)
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 5 */
+  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
 	float freq = madgwick_freq;
 	float delay = 1000.0f / freq;
 	uint32_t ticksDelay = (uint32_t)(delay / portTICK_PERIOD_MS);
@@ -625,17 +629,25 @@ void StartMerjenjeNagiba(void *argument)
 	__HAL_I2C_ENABLE(&hi2c1);
 	initLSM303DLHC();
 
-	uint8_t meritev_size = 10;
-	int16_t meritev[meritev_size];
-	meritev[0] = 0xaaab;
+	int16_t meritev[9];
+	float rezultat[4];
+	char b[] = {0xaa, 0xab, 0xaa, 0xab};
+	memcpy(&rezultat[0], &b, sizeof(float));
 	/* Infinite loop */
 	for (;;) {
-		spi1_beriRegistre(0x28, (uint8_t*) &meritev[1], 6); // gyros
-		i2c1_beriRegistre(0x19, 0x28, (uint8_t*) &meritev[4], 6); // accel
-		i2c1_beriRegistre(0x3c, 0x03, (uint8_t*) &meritev[7], 6); // magnet
-		MadgwickAHRSupdate(-meritev[1], meritev[2], meritev[3], meritev[4], meritev[5], meritev[6], meritev[7], meritev[8], meritev[9]);
+		spi1_beriRegistre(0x28, (uint8_t*) &meritev[0], 6); // gyros
+		i2c1_beriRegistre(0x19, 0x28, (uint8_t*) &meritev[3], 6, 1); // accel
+		i2c1_beriRegistre(0x3c, 0x03, (uint8_t*) &meritev[6], 6, 0); // magnet
+		MadgwickAHRSupdate(-meritev[1]*0.00875*M_PI/180, meritev[0]*0.00875*M_PI/180, meritev[2]*0.00875*M_PI/180, meritev[3], meritev[4], meritev[5], meritev[6], meritev[8], meritev[7]);
 
-		CDC_Transmit_FS((uint8_t*) &meritev, meritev_size * sizeof(int16_t));
+		float roll=atan2(2*(q0*q1+q2*q3),1-2*(q1*q1+q2*q2))*180/M_PI;
+		float pitch=asin(2*(q0*q2-q3*q1))*180/M_PI;
+		float yaw=atan2(2*(q0*q3+q1*q2),1-2*(q2*q2+q3*q3))*180/M_PI;
+
+		rezultat[1] = roll; rezultat[2] = pitch; rezultat[3] = yaw;
+
+		CDC_Transmit_FS((uint8_t*) &rezultat, 4 * sizeof(float));
+		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
 		osDelay(ticksDelay);
 	}
   /* USER CODE END 5 */ 
