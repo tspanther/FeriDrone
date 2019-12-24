@@ -3,6 +3,7 @@
 
 #include "vl53l0x_platform.h"
 #include "vl53l0x_def.h"
+//#include "stm32f4xx_hal_def.h"
 //#include "vl53l0x_platform_log.h"
 // #include "vl53l0x_i2c_platform.h"
 
@@ -71,9 +72,28 @@ VL53L0X_Error VL53L0X_UnlockSequenceAccess(VL53L0X_DEV Dev) {
 VL53L0X_Error VL53L0X_WriteMulti(VL53L0X_DEV Dev, uint8_t index, uint8_t *pdata,
                                  uint32_t count) {
   uint8_t addr = Dev->I2cDevAddr << 1;
-  HAL_I2C_Mem_Write(Dev->hi2c, addr, index, I2C_MEMADD_SIZE_8BIT, pdata, count, count);
+  HAL_I2C_Mem_Write(Dev->hi2c, addr, index, I2C_MEMADD_SIZE_8BIT, pdata, count, 100);
   return VL53L0X_ERROR_NONE;
 }
+/*
+VL53L0X_Error VL53L0X_WriteMulti(VL53L0X_DEV Dev, uint8_t index, uint8_t *pdata,
+        uint32_t count)
+{
+    static uint8_t data[32];
+
+    if (count >=(sizeof (data)-1) )
+    {
+        return  VL53L0X_ERROR_UNDEFINED;
+    }
+
+    data[0] = index;
+    memcpy(data+1,pdata,count);
+    uint8_t addr = Dev->I2cDevAddr << 1;
+
+    HAL_I2C_Master_Transmit(Dev->hi2c, addr, data, count+1, 1000);
+    return VL53L0X_ERROR_NONE;
+}
+*/
 
 /**
  * Reads the requested number of bytes from the device
@@ -88,7 +108,7 @@ VL53L0X_Error VL53L0X_ReadMulti(VL53L0X_DEV Dev, uint8_t index, uint8_t *pdata,
                                 uint32_t count) {
   uint16_t addr = Dev->I2cDevAddr << 1;
   HAL_I2C_Mem_Read(Dev->hi2c, addr, index, I2C_MEMADD_SIZE_8BIT, pdata, count,
-                   count);
+                   100);
   return VL53L0X_ERROR_NONE;
 }
 

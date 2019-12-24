@@ -39,7 +39,14 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define TOFS_devID 0x29
-//#define madgwick_freq 60.0f
+#define MODE_MOCK 1
+#define MODE_REAL 0
+#define MODE MODE_MOCK
+
+// MOCK
+#define HELIX_FREQ 0.2f
+#define HELIX_WL 5.0f
+#define HELIX_STEP 1000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -123,21 +130,6 @@ VL53L0X_Error InitDevice(VL53L0X_Dev_t *pMyDevice) {
   // debug_LED(0xf);
 
   return Status;
-}
-
-uint8_t TOFS_write(uint8_t data) {
-  uint8_t dev = (TOFS_devID << 1) | 0x01; // write
-  return HAL_I2C_Master_Transmit(&hi2c1, dev, &data, 1, 10);
-}
-
-uint8_t TOFS_read() {
-  uint8_t data;
-  HAL_I2C_Master_Receive(&hi2c1, TOFS_devID << 1, &data, 1, 10);
-  return data;
-}
-
-void TOFS_read_many(uint8_t *data, uint8_t len) {
-  HAL_I2C_Master_Receive(&hi2c1, TOFS_devID << 1, data, len, len * 10);
 }
 
 uint8_t spi1_beriRegister(uint8_t reg) {
@@ -234,7 +226,9 @@ int main(void)
   MX_SPI1_Init();
   MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
-
+	/* init code for USB_DEVICE */
+	MX_USB_DEVICE_Init();
+  __HAL_I2C_ENABLE(&hi2c3);
   /* USER CODE END 2 */
 
   osKernelInitialize();
@@ -614,43 +608,81 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartMerjenjeNagiba */
 void StartMerjenjeNagiba(void *argument)
 {
-  /* init code for USB_DEVICE */
-  MX_USB_DEVICE_Init();
-  /* USER CODE BEGIN 5 */
-  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
-	float freq = madgwick_freq;
-	float delay = 1000.0f / freq;
-	uint32_t ticksDelay = (uint32_t)(delay / portTICK_PERIOD_MS);
+	/* USER CODE BEGIN 5 */
 
-	__HAL_SPI_ENABLE(&hspi1);
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
-	initL3GD20();
-
-	__HAL_I2C_ENABLE(&hi2c1);
-	initLSM303DLHC();
-
-	int16_t meritev[9];
 	float rezultat[4];
-	char b[] = {0xaa, 0xab, 0xaa, 0xab};
+	char b[] = { 0xaa, 0xab, 0xaa, 0xab };
 	memcpy(&rezultat[0], &b, sizeof(float));
-	/* Infinite loop */
-	for (;;) {
-		spi1_beriRegistre(0x28, (uint8_t*) &meritev[0], 6); // gyros
-		i2c1_beriRegistre(0x19, 0x28, (uint8_t*) &meritev[3], 6, 1); // accel
-		i2c1_beriRegistre(0x3c, 0x03, (uint8_t*) &meritev[6], 6, 0); // magnet
-		MadgwickAHRSupdate(-meritev[1]*0.00875*M_PI/180, meritev[0]*0.00875*M_PI/180, meritev[2]*0.00875*M_PI/180, meritev[3], meritev[4], meritev[5], meritev[6], meritev[8], meritev[7]);
 
-		float roll=atan2(2*(q0*q1+q2*q3),1-2*(q1*q1+q2*q2))*180/M_PI;
-		float pitch=asin(2*(q0*q2-q3*q1))*180/M_PI;
-		float yaw=atan2(2*(q0*q3+q1*q2),1-2*(q2*q2+q3*q3))*180/M_PI;
+	if (MODE == MODE_MOCK) {
+		// delay
+		float freq = HELIX_FREQ * HELIX_STEP;
+		float delay = 1000.0f / freq;
+		uint32_t ticksDelay = (uint32_t) (delay / portTICK_PERIOD_MS);
 
-		rezultat[1] = roll; rezultat[2] = pitch; rezultat[3] = yaw;
+		float eps = 0.0001;
+		float len_deriv = sqrt(/*derivative_x * derivative_x + derivative_y * derivative_y ==*/1 + HELIX_WL * HELIX_WL);
+		float derivative_z = HELIX_WL / len_deriv;
 
-		CDC_Transmit_FS((uint8_t*) &rezultat, 4 * sizeof(float));
-		HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-		osDelay(ticksDelay);
+		// loop
+		float t = 0.0f;
+		int reverse = 1;
+		for (;;){
+			float derivative_x = -sin(t) / len_deriv;
+			float derivative_y = cos(t) / len_deriv;
+
+			float pitch = asin(-derivative_y);
+			float yaw = atan2(derivative_x, derivative_z);
+			float roll = -sin(t) / 10.0f;
+
+			rezultat[1] = roll;
+			rezultat[2] = pitch;
+			rezultat[3] = yaw;
+
+			CDC_Transmit_FS((uint8_t*) &rezultat, 4 * sizeof(float));
+			osDelay(ticksDelay);
+
+			t += reverse * M_PI * 2 / freq;
+			if (t <= eps || t >= M_PI * 2 - eps) {
+				reverse *= -1;
+			}
+		}
+	} else if (MODE == MODE_REAL) {
+		// init
+		__HAL_SPI_ENABLE(&hspi1);
+		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
+		initL3GD20();
+
+		__HAL_I2C_ENABLE(&hi2c1);
+		initLSM303DLHC();
+
+		// delay
+		float freq = madgwick_freq;
+		float delay = 1000.0f / freq;
+		uint32_t ticksDelay = (uint32_t) (delay / portTICK_PERIOD_MS);
+
+		int16_t meritev[9];
+		for (;;) {
+			spi1_beriRegistre(0x28, (uint8_t*) &meritev[0], 6); // gyros
+			i2c1_beriRegistre(0x19, 0x28, (uint8_t*) &meritev[3], 6, 1); // accel
+			i2c1_beriRegistre(0x3c, 0x03, (uint8_t*) &meritev[6], 6, 0); // magnet
+			MadgwickAHRSupdate(-meritev[1] * 0.00875 * M_PI / 180, meritev[0] * 0.00875 * M_PI / 180, meritev[2] * 0.00875 * M_PI / 180,
+					meritev[3], meritev[4], meritev[5],
+					meritev[6], meritev[8], meritev[7]);
+
+			float roll = atan2(2 * (q0 * q1 + q2 * q3), 1 - 2 * (q1 * q1 + q2 * q2)) * 180 / M_PI;
+			float pitch = asin(2 * (q0 * q2 - q3 * q1)) * 180 / M_PI;
+			float yaw = atan2(2 * (q0 * q3 + q1 * q2), 1 - 2 * (q2 * q2 + q3 * q3)) * 180 / M_PI;
+
+			rezultat[1] = roll;
+			rezultat[2] = pitch;
+			rezultat[3] = yaw;
+
+			CDC_Transmit_FS((uint8_t*) &rezultat, 4 * sizeof(float));
+			osDelay(ticksDelay);
+		}
 	}
-  /* USER CODE END 5 */ 
+	/* USER CODE END 5 */
 }
 
 /* USER CODE BEGIN Header_StartTrilateracija */
@@ -660,16 +692,49 @@ void StartMerjenjeNagiba(void *argument)
  * @retval None
  */
 /* USER CODE END Header_StartTrilateracija */
-void StartTrilateracija(void *argument)
-{
-  /* USER CODE BEGIN StartTrilateracija */
-	/* Infinite loop */
-	for (;;) {
-		osDelay(100);
-	}
-  /* USER CODE END StartTrilateracija */
-}
+void StartTrilateracija(void *argument) {
+	/* USER CODE BEGIN StartTrilateracija */
 
+	float rezultat[4];
+	char b[] = { 0xaa, 0xac, 0xaa, 0xac };
+	memcpy(&rezultat[0], &b, sizeof(float));
+
+	if (MODE == MODE_MOCK) {
+		// delay
+		float freq = HELIX_FREQ * HELIX_STEP / 2;
+		float delay = 1000.0f / freq;
+		uint32_t ticksDelay = (uint32_t) (delay / portTICK_PERIOD_MS);
+
+		float eps = 0.0001;
+
+		// loop
+		float t = 0.0f;
+		int reverse = 1;
+		for (;;) {
+			float pos_x = cos(t);
+			float pos_y = sin(t);
+			float pos_z = t;
+
+			rezultat[1] = pos_x;
+			rezultat[2] = pos_y;
+			rezultat[3] = pos_z;
+
+			CDC_Transmit_FS((uint8_t*) &rezultat, 4 * sizeof(float));
+			osDelay(ticksDelay);
+
+			t += reverse * M_PI * 2 / freq;
+			if (t <= eps || t >= M_PI * 2 - eps) {
+				reverse *= -1;
+			}
+		}
+	} else if (MODE == MODE_REAL) {
+		for (;;) {
+			osDelay(100);
+		}
+	}
+
+	/* USER CODE END StartTrilateracija */
+}
 /* USER CODE BEGIN Header_StartPilotiranje */
 /**
  * @brief Function implementing the pilotiranje thread.
@@ -677,27 +742,29 @@ void StartTrilateracija(void *argument)
  * @retval None
  */
 /* USER CODE END Header_StartPilotiranje */
-void StartPilotiranje(void *argument)
-{
-  /* USER CODE BEGIN StartPilotiranje */
-	/*
-	__HAL_I2C_ENABLE(&hi2c3);
-	VL53L0X_Dev_t dev1;
-	dev1.I2cDevAddr = TOFS_devID;
-	dev1.comms_type = 1;
-	dev1.comms_speed_khz = 400;
-	dev1.hi2c = &hi2c3;
-	//dev1.hi2c = &hi2c3;
-	InitDevice(&dev1);
-	/* Infinite loop */
-	for (;;) {
-		/*
-		uint8_t buffer[4];
-		VL53L0X_ReadMulti(&dev1, 0xC0, buffer + 1, 3);
-		*/
-		osDelay(2000);
+void StartPilotiranje(void *argument) {
+	/* USER CODE BEGIN StartPilotiranje */
+
+	if (MODE == MODE_MOCK) {
+		for (;;) {
+			osDelay(100);
+		}
+	} else if (MODE == MODE_REAL) {
+		VL53L0X_Dev_t dev1;
+		dev1.I2cDevAddr = TOFS_devID;
+		dev1.comms_type = 1;
+		dev1.comms_speed_khz = 400;
+		dev1.hi2c = &hi2c3;
+		//dev1.hi2c = &hi2c3;
+		InitDevice(&dev1);
+		/* Infinite loop */
+		for (;;) {
+			uint8_t buffer[4];
+			VL53L0X_ReadMulti(&dev1, 0xC0, buffer + 1, 3);
+			osDelay(2000);
+		}
 	}
-  /* USER CODE END StartPilotiranje */
+	/* USER CODE END StartPilotiranje */
 }
 
 /**

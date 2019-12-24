@@ -11,9 +11,9 @@ with open('comport_recv_{}.csv'.format(OTPT_FILE), 'w') as fd:
     fd.write('roll,pitch,yaw\n')
     while(True):
         temp = port.read(1)
-        if (temp == b'\xab'):
+        if (temp == b'\xaa'):
             temp = port.read(1)
-            if (temp == b'\xaa'):
+            if (temp == b'\xab'):
                 break
     data = port.read(14)
     dataArr = []
@@ -24,5 +24,5 @@ with open('comport_recv_{}.csv'.format(OTPT_FILE), 'w') as fd:
         pData = []
         for k in range(4,13,4):
             bytes_ = dataArr[i][k:k+4]
-            pData.append(struct.unpack('>f', bytes_)[0])
+            pData.append(struct.unpack('<f', bytes_)[0])
         fd.write(str(i) + "," + ",".join(str(x) for x in pData) + '\n')
