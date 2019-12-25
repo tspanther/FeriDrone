@@ -56,7 +56,19 @@ void Object::loadObj(QString objFile){
     std::vector<glm::vec3> normals;
     std::vector<glm::vec3> vertices;
 
-    std::ifstream file(objFile.toStdString());
+    // Implement OBJ-Loader library.
+    objl::Loader loader;
+    loader.LoadFile(objFile.toStdString());
+
+    // TIP: optimization: implement this in LoadFile function.
+
+    for(unsigned int i = 0; i < loader.LoadedVertices.size(); i++){
+        //glm::vec3 tempVert = glm::vec3(loader.LoadedVertices[0]);
+
+    }
+
+
+   /* std::ifstream file(objFile.toStdString());
     if (file.is_open()) {
         std::string opt;
         while (file >> opt) {
@@ -101,7 +113,7 @@ void Object::loadObj(QString objFile){
     }
     else {
         std::cout << "Obj file not found." << std::endl;
-    }
+    }*/
 }
 
 void Object::loadTexture(QString texFile){
