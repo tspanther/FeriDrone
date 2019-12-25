@@ -6,6 +6,7 @@
 #include <QOpenGLFunctions_3_3_Core>
 #include <vector>
 
+
 class Object {
 public:
     Object(QOpenGLFunctions_3_3_Core *gl_in, QString objFile, QString texFile);
