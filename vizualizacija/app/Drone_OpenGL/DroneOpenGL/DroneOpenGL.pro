@@ -21,7 +21,8 @@ QMAKE_CXXFLAGS += -std=c++0x
 CONFIG += c++11
 
 INCLUDEPATH += ../../lib/glm/
-INCLUDEPATH += ../../lib/objectLoader/Source/
+#INCLUDEPATH += ../../lib/obj_loader_fast/
+INCLUDEPATH += ../../lib/tinyobjloader-master/
 
 DISTFILES += \
     fshader.frag \

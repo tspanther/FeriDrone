@@ -5,7 +5,7 @@
 #include <glm/ext.hpp>
 #include <QOpenGLFunctions_3_3_Core>
 #include <vector>
-#include "OBJ_Loader.h"
+
 
 class Object {
 public:
