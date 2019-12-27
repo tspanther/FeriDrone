@@ -92,7 +92,7 @@ void WidgetOpenGLDraw::initializeGL() {
     gl->glEnable(GL_DEPTH_TEST);
     //glDisable(GL_CULL_FACE);
 
-    std::vector<const char*> objFiles = { "../DroneOpenGL/vaja2_don.obj" };
+    std::vector<const char*> objFiles = { "../DroneOpenGL/models/feriCopterZaVizualizacijo.obj", "../DroneOpenGL/models/Low-Poly_Models.obj" };
     std::vector<const char*> texFiles = { "../DroneOpenGL/lenna.png" };
 
     for (unsigned int i = 0; i < objFiles.size(); i++){
