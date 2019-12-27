@@ -212,7 +212,7 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
         case Qt::Key::Key_BracketRight:
             objekti[focusObject]->objz0-=0.1;
             break;
-        case Qt::Key::Key_A:
+        /*case Qt::Key::Key_A:
             pitch += glm::pi<double>() / 30.0;
             updateLookAt();
             break;
@@ -235,7 +235,7 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
         case Qt::Key::Key_H:
             roll -= glm::pi<double>() / 30.0;
             updateUpVec();
-            break;
+            break;*/
         case Qt::Key::Key_Z:
             objekti[focusObject]->scale*=1.1;
             break;
@@ -263,11 +263,19 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
 void WidgetOpenGLDraw::wheelEvent(QWheelEvent *event){
     makeCurrent();
     // Camera, Z translation.
+    if(!invert){
+        if(event->delta() > 0)
+            camPos -= glm::vec3(0.0, 0.0, 0.1);
+        else
+            camPos += glm::vec3(0.0, 0.0, 0.1);
+    }else{
+        if(event->delta() > 0)
+            roll += glm::pi<double>() / 30.0;
+        else
+            roll -= glm::pi<double>() / 30.0;
 
-    if(event->delta() > 0)
-        camPos -= glm::vec3(0.0, 0.0, 0.1);
-    else
-        camPos += glm::vec3(0.0, 0.0, 0.1);
+        updateUpVec();
+    }
 
     update();
 }
@@ -276,23 +284,69 @@ void WidgetOpenGLDraw::mousePressEvent(QMouseEvent *event){
     makeCurrent();
 
     if (event->button() == Qt::MiddleButton)
-        invertTranslation = !invertTranslation;
+        invert = !invert;
 
-    if (event->button()==Qt::LeftButton){
-        if(!invertTranslation)
-            camPos += glm::vec3(0.1, 0.0, 0.0);
-        else
-            camPos -= glm::vec3(0.1, 0.0, 0.0);
-    }
+    if (event->button()==Qt::LeftButton)
+        leftMouseButton = true;
 
     if(event->button()==Qt::RightButton)
-    {
-        if(!invertTranslation)
-            camPos += glm::vec3(0.0, 0.1, 0.0);
-        else
-            camPos -= glm::vec3(0.0, 0.1, 0.0);
+        rightMouseButton = true;
+
+    update();
+}
+
+void WidgetOpenGLDraw::mouseReleaseEvent(QMouseEvent *event){
+    makeCurrent();
+    leftMouseButton = false;
+    rightMouseButton = false;
+    update();
+}
+
+void WidgetOpenGLDraw::mouseMoveEvent(QMouseEvent *event){
+    makeCurrent();
+
+
+    QPoint point = event->pos();
+    double deltaX = abs(point.rx() - current.rx());
+    double deltaY = abs(point.ry() - current.ry());
+
+    if(leftMouseButton && !invert){
+        if(deltaX>deltaY){
+            if(current.rx()<point.rx()){
+                camPos += glm::vec3(0.1, 0.0, 0.0);
+            }else if(current.rx()>point.rx()){
+                camPos -= glm::vec3(0.1, 0.0, 0.0);
+            }
+        }
+    }else if(rightMouseButton && !invert){
+        if(deltaX<=deltaY){
+            if(current.ry()>point.ry()){
+                camPos += glm::vec3(0.0, 0.1, 0.0);
+            }else if(current.ry()<point.ry()){
+                camPos -= glm::vec3(0.0, 0.1, 0.0);
+            }
+        }
+    }else if(leftMouseButton && invert){
+        if(deltaX>deltaY){
+            if(current.rx()<point.rx()){
+                yaw += glm::pi<double>() / 30.0;
+            }else if(current.rx()>point.rx()){
+                yaw -= glm::pi<double>() / 30.0;
+            }
+        }
+        updateLookAt();
+    }else if(rightMouseButton && invert){
+        if(deltaX<=deltaY){
+            if(current.ry()>point.ry()){
+                pitch += glm::pi<double>() / 30.0;
+            }else if(current.ry()<point.ry()){
+                pitch -= glm::pi<double>() / 30.0;
+            }
+        }
+        updateLookAt();
     }
 
+    current=point;
     update();
 }
 

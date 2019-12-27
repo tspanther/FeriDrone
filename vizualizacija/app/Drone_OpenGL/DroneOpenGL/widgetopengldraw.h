@@ -38,7 +38,9 @@ private:
 
     // other
     unsigned int projMode = 0;
-    bool invertTranslation = false;
+    bool invert = false;
+    bool leftMouseButton = false, rightMouseButton = false;
+    QPoint current = QPoint(0, 0);
 protected:
 	void paintGL() override;
 	void initializeGL() override;
@@ -47,6 +49,8 @@ protected:
     void keyPressEvent(QKeyEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
     void readFile(std::string path, std::string &save);
 signals:
 
