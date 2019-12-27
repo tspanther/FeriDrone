@@ -10,11 +10,10 @@
 #include <QImage>
 #include "Source/OBJ_Loader.h"
 
-Object::Object(QOpenGLFunctions_3_3_Core *gl_in, QString objFile, QString texFile) {
+Object::Object(QOpenGLFunctions_3_3_Core *gl_in, QString objFile/*, QString texFile*/) {
     gl = gl_in;
 
     loadObj(objFile);
-    loadTexture(texFile);
 
     gl->glGenVertexArrays(1, &VAO);
     gl->glBindVertexArray(VAO);
@@ -22,12 +21,10 @@ Object::Object(QOpenGLFunctions_3_3_Core *gl_in, QString objFile, QString texFil
     gl->glBindBuffer(GL_ARRAY_BUFFER, VBO);
     gl->glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
 
-    gl->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
     gl->glEnableVertexAttribArray(0);
-    gl->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    gl->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
     gl->glEnableVertexAttribArray(1);
-    gl->glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    gl->glEnableVertexAttribArray(2);
+    gl->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
 }
 
 void Object::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
@@ -41,7 +38,6 @@ void Object::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
 
 
     gl->glBindVertexArray(VAO);
-    gl->glBindTexture(GL_TEXTURE_2D, tex_id);
     gl->glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "PVM"), 1, GL_FALSE, glm::value_ptr(PVM));
@@ -79,20 +75,4 @@ void Object::loadObj(QString objFile){
         }
     }
 
-}
-
-void Object::loadTexture(QString texFile){
-    QImage img;
-    img.load(texFile);
-    img = img.convertToFormat(QImage::Format_RGBA8888);
-
-    gl->glGenTextures(1, &tex_id);
-    gl->glBindTexture(GL_TEXTURE_2D, tex_id);
-    gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img.bits());
-    gl->glGenerateMipmap(GL_TEXTURE_2D);
-
-    gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }

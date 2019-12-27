@@ -93,10 +93,9 @@ void WidgetOpenGLDraw::initializeGL() {
     //glDisable(GL_CULL_FACE);
 
     std::vector<const char*> objFiles = { "../DroneOpenGL/models/feriCopterZaVizualizacijo.obj", "../DroneOpenGL/models/Low-Poly_Models.obj" };
-    std::vector<const char*> texFiles = { "../DroneOpenGL/lenna.png" };
 
     for (unsigned int i = 0; i < objFiles.size(); i++){
-        objekti.push_back(new Object(gl, objFiles[i], texFiles[i]));
+        objekti.push_back(new Object(gl, objFiles[i]));
     }
 
     setDefaults();
@@ -213,7 +212,7 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
         case Qt::Key::Key_BracketRight:
             objekti[focusObject]->objz0-=0.1;
             break;
-        case Qt::Key::Key_A:
+        /*case Qt::Key::Key_A:
             pitch += glm::pi<double>() / 30.0;
             updateLookAt();
             break;
@@ -236,25 +235,7 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
         case Qt::Key::Key_H:
             roll -= glm::pi<double>() / 30.0;
             updateUpVec();
-            break;
-        case Qt::Key::Key_J:
-            camPos += glm::vec3(0.1, 0.0, 0.0);
-            break;
-        case Qt::Key::Key_K:
-            camPos -= glm::vec3(0.1, 0.0, 0.0);
-            break;
-        case Qt::Key::Key_L:
-            camPos += glm::vec3(0.0, 0.1, 0.0);
-            break;
-        case Qt::Key::Key_Semicolon:
-            camPos -= glm::vec3(0.0, 0.1, 0.0);
-            break;
-        case Qt::Key::Key_Apostrophe:
-            camPos += glm::vec3(0.0, 0.0, 0.1);
-            break;
-        case Qt::Key::Key_Backslash:
-            camPos -= glm::vec3(0.0, 0.0, 0.1);
-            break;
+            break;*/
         case Qt::Key::Key_Z:
             objekti[focusObject]->scale*=1.1;
             break;
@@ -275,7 +256,97 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             focusObject %= objekti.size();
             break;
     }
+    update();
+}
 
+
+void WidgetOpenGLDraw::wheelEvent(QWheelEvent *event){
+    makeCurrent();
+    // Camera, Z translation.
+    if(!invert){
+        if(event->delta() > 0)
+            camPos -= glm::vec3(0.0, 0.0, 0.1);
+        else
+            camPos += glm::vec3(0.0, 0.0, 0.1);
+    }else{
+        if(event->delta() > 0)
+            roll += glm::pi<double>() / 30.0;
+        else
+            roll -= glm::pi<double>() / 30.0;
+
+        updateUpVec();
+    }
+
+    update();
+}
+
+void WidgetOpenGLDraw::mousePressEvent(QMouseEvent *event){
+    makeCurrent();
+
+    if (event->button() == Qt::MiddleButton)
+        invert = !invert;
+
+    if (event->button()==Qt::LeftButton)
+        leftMouseButton = true;
+
+    if(event->button()==Qt::RightButton)
+        rightMouseButton = true;
+
+    update();
+}
+
+void WidgetOpenGLDraw::mouseReleaseEvent(QMouseEvent *event){
+    makeCurrent();
+    leftMouseButton = false;
+    rightMouseButton = false;
+    update();
+}
+
+void WidgetOpenGLDraw::mouseMoveEvent(QMouseEvent *event){
+    makeCurrent();
+
+
+    QPoint point = event->pos();
+    double deltaX = abs(point.rx() - current.rx());
+    double deltaY = abs(point.ry() - current.ry());
+
+    if(leftMouseButton && !invert){
+        if(deltaX>deltaY){
+            if(current.rx()<point.rx()){
+                camPos += glm::vec3(0.1, 0.0, 0.0);
+            }else if(current.rx()>point.rx()){
+                camPos -= glm::vec3(0.1, 0.0, 0.0);
+            }
+        }
+    }else if(rightMouseButton && !invert){
+        if(deltaX<=deltaY){
+            if(current.ry()>point.ry()){
+                camPos += glm::vec3(0.0, 0.1, 0.0);
+            }else if(current.ry()<point.ry()){
+                camPos -= glm::vec3(0.0, 0.1, 0.0);
+            }
+        }
+    }else if(leftMouseButton && invert){
+        if(deltaX>deltaY){
+            if(current.rx()<point.rx()){
+                yaw += glm::pi<double>() / 30.0;
+            }else if(current.rx()>point.rx()){
+                yaw -= glm::pi<double>() / 30.0;
+            }
+        }
+        updateLookAt();
+    }else if(rightMouseButton && invert){
+        if(deltaX<=deltaY){
+            if(current.ry()>point.ry()){
+                pitch += glm::pi<double>() / 30.0;
+            }else if(current.ry()<point.ry()){
+                pitch -= glm::pi<double>() / 30.0;
+            }
+        }
+        updateLookAt();
+    }
+
+    current=point;
     update();
 }
 
