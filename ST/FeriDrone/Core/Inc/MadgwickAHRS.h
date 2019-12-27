@@ -13,7 +13,7 @@
 #ifndef MadgwickAHRS_h
 #define MadgwickAHRS_h
 
-#define madgwick_freq 60.0f
+#define MADGWICK_FREQ 60.0f
 
 //----------------------------------------------------------------------------------------------------
 // Variable declaration

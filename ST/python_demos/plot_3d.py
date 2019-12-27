@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-FILE = 'C:/Users/Niko-AMD/Documents/Drone/FeriDrone/ST/comport_recv_imu_pos'
+FILE = 'C:/Users/Niko-AMD/Documents/Drone/FeriDrone/ST/python_demos/data/comport_recv_imu_pos'
 df = pd.read_csv(FILE + '.csv')
 
 x = df['pos_z']

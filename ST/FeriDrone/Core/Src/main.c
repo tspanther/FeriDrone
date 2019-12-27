@@ -20,7 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
+#include "cmsis_os2.h"
 #include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -47,6 +47,8 @@
 #define HELIX_FREQ 0.2f
 #define HELIX_WL 5.0f
 #define HELIX_STEP 1000
+
+#define WIFI_BUFFER_SIZE 64
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -66,6 +68,8 @@ SPI_HandleTypeDef hspi1;
 osThreadId_t merjenjeNagibaHandle;
 osThreadId_t trilateracijaHandle;
 osThreadId_t pilotiranjeHandle;
+osThreadId_t posiljanjeWifiHandle;
+osSemaphoreId_t wifiBufferSemaphoreHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -81,6 +85,7 @@ static void MX_I2C3_Init(void);
 void StartMerjenjeNagiba(void *argument);
 void StartTrilateracija(void *argument);
 void StartPilotiranje(void *argument);
+void StartPosiljanjeWifi(void *argument);
 
 /* USER CODE BEGIN PFP */
 uint8_t spi1_beriRegister(uint8_t);
@@ -94,6 +99,43 @@ void initLSM303DLHC(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+float wifiBuffer[WIFI_BUFFER_SIZE];
+uint8_t wifiBufferIdx = 0;
+
+void addToWifiBuffer(float* data, uint8_t size, uint8_t* lastBufferIdx){
+	if (wifiBufferIdx > WIFI_BUFFER_SIZE - size - 1){
+		for (int i = 0; i < size; i++){
+			// overwrite previous measurement of this taks if buffer full
+			wifiBuffer[i + *lastBufferIdx] = *(data + i);
+		}
+	} else {
+		for (int i = 0; i < size; i++){
+			wifiBuffer[i + wifiBufferIdx] = *(data + i);
+		}
+		*lastBufferIdx = wifiBufferIdx;
+		wifiBufferIdx += 4;
+	}
+}
+
+void CompressBuffer(void) {
+	/* todo: Aljaz
+	 *
+	 * stiskanje 6 tokov (roll, pitch, yaw, pos_{x,y,z})
+	 * vsak tok stiskaj posebej (vseh 6)
+	 *
+	 * globalno si shrani podatek o zadnji vrednosti iz vsakega toka ( float lastValue[6] )
+	 * 	- da, vsakic ko kompresiras nov buffer/batch, ne zacnes znova
+	 *
+	 * 	sparsaj buffer - ugotovi, za kateri paket gre (0xAAAB static castan v float za roll, pitch yaw in 0xAAAC za pos_{x,y,z})
+	 * 	floatu, ki je header sledijo 3 floati, ki so vrednosti; isti vrstni red, kot so nasteti (r->p->y oz. x->y->z)
+	 *
+	 * lahko si zamislis svoj protokol, kako bos zapisal nazaj v buffer (recimo ne rabis pisat headerjev kot celih floatov nazaj v buffer)
+	 * prek USB/Wifi bo sel del bufferja; of indexa 0 do indexa wifiBufferIdx
+	 * 	- kompresirano vsebino zapisi na zacetek bufferja in nastavi index, do kod naj se poslje
+	 *
+	*/
+}
+
 VL53L0X_Error InitDevice(VL53L0X_Dev_t *pMyDevice) {
   VL53L0X_Error Status = VL53L0X_ERROR_NONE;
   uint8_t VhvSettings, PhaseCal, isApertureSpads;
@@ -226,8 +268,8 @@ int main(void)
   MX_SPI1_Init();
   MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
-	/* init code for USB_DEVICE */
-	MX_USB_DEVICE_Init();
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
   __HAL_I2C_ENABLE(&hi2c3);
   /* USER CODE END 2 */
 
@@ -236,6 +278,13 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
+
+  /* Create the semaphores(s) */
+  /* definition and creation of wifiBufferSemaphore */
+  const osSemaphoreAttr_t wifiBufferSemaphore_attributes = {
+    .name = "wifiBufferSemaphore"
+  };
+  wifiBufferSemaphoreHandle = osSemaphoreNew(1, 1, &wifiBufferSemaphore_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
 	/* add semaphores, ... */
@@ -273,6 +322,14 @@ int main(void)
     .stack_size = 512
   };
   pilotiranjeHandle = osThreadNew(StartPilotiranje, NULL, &pilotiranje_attributes);
+
+  /* definition and creation of posiljanjeWifi */
+  const osThreadAttr_t posiljanjeWifi_attributes = {
+    .name = "posiljanjeWifi",
+    .priority = (osPriority_t) osPriorityNormal,
+    .stack_size = 512
+  };
+  posiljanjeWifiHandle = osThreadNew(StartPosiljanjeWifi, NULL, &posiljanjeWifi_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -608,17 +665,20 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartMerjenjeNagiba */
 void StartMerjenjeNagiba(void *argument)
 {
-	/* USER CODE BEGIN 5 */
+  /* init code for USB_DEVICE */
+  MX_USB_DEVICE_Init();
+  /* USER CODE BEGIN 5 */
 
 	float rezultat[4];
 	char b[] = { 0xaa, 0xab, 0xaa, 0xab };
 	memcpy(&rezultat[0], &b, sizeof(float));
+	uint8_t lastBufferIdx = 0;
 
 	if (MODE == MODE_MOCK) {
 		// delay
 		float freq = HELIX_FREQ * HELIX_STEP;
 		float delay = 1000.0f / freq;
-		uint32_t ticksDelay = (uint32_t) (delay / portTICK_PERIOD_MS);
+		uint32_t ticksDelay = (uint32_t) (delay / 1);
 
 		float eps = 0.0001;
 		float len_deriv = sqrt(/*derivative_x * derivative_x + derivative_y * derivative_y ==*/1 + HELIX_WL * HELIX_WL);
@@ -639,8 +699,12 @@ void StartMerjenjeNagiba(void *argument)
 			rezultat[2] = pitch;
 			rezultat[3] = yaw;
 
-			CDC_Transmit_FS((uint8_t*) &rezultat, 4 * sizeof(float));
-			osDelay(ticksDelay);
+			//CDC_Transmit_FS((uint8_t*) &rezultat, 4 * sizeof(float));
+			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK){
+				addToWifiBuffer(rezultat, 4, &lastBufferIdx);
+				osSemaphoreRelease(wifiBufferSemaphoreHandle);
+				osDelay(ticksDelay);
+			}
 
 			t += reverse * M_PI * 2 / freq;
 			if (t <= eps || t >= M_PI * 2 - eps) {
@@ -657,9 +721,9 @@ void StartMerjenjeNagiba(void *argument)
 		initLSM303DLHC();
 
 		// delay
-		float freq = madgwick_freq;
+		float freq = MADGWICK_FREQ;
 		float delay = 1000.0f / freq;
-		uint32_t ticksDelay = (uint32_t) (delay / portTICK_PERIOD_MS);
+		uint32_t ticksDelay = (uint32_t) (delay / 1);
 
 		int16_t meritev[9];
 		for (;;) {
@@ -678,11 +742,14 @@ void StartMerjenjeNagiba(void *argument)
 			rezultat[2] = pitch;
 			rezultat[3] = yaw;
 
-			CDC_Transmit_FS((uint8_t*) &rezultat, 4 * sizeof(float));
-			osDelay(ticksDelay);
+			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK){
+				addToWifiBuffer(rezultat, 4, &lastBufferIdx);
+				osSemaphoreRelease(wifiBufferSemaphoreHandle);
+				osDelay(ticksDelay);
+			}
 		}
 	}
-	/* USER CODE END 5 */
+  /* USER CODE END 5 */ 
 }
 
 /* USER CODE BEGIN Header_StartTrilateracija */
@@ -692,18 +759,20 @@ void StartMerjenjeNagiba(void *argument)
  * @retval None
  */
 /* USER CODE END Header_StartTrilateracija */
-void StartTrilateracija(void *argument) {
-	/* USER CODE BEGIN StartTrilateracija */
+void StartTrilateracija(void *argument)
+{
+  /* USER CODE BEGIN StartTrilateracija */
 
 	float rezultat[4];
 	char b[] = { 0xaa, 0xac, 0xaa, 0xac };
 	memcpy(&rezultat[0], &b, sizeof(float));
+	uint8_t lastBufferIdx = 0;
 
 	if (MODE == MODE_MOCK) {
 		// delay
 		float freq = HELIX_FREQ * HELIX_STEP / 2;
 		float delay = 1000.0f / freq;
-		uint32_t ticksDelay = (uint32_t) (delay / portTICK_PERIOD_MS);
+		uint32_t ticksDelay = (uint32_t) (delay / 1);
 
 		float eps = 0.0001;
 
@@ -719,8 +788,11 @@ void StartTrilateracija(void *argument) {
 			rezultat[2] = pos_y;
 			rezultat[3] = pos_z;
 
-			CDC_Transmit_FS((uint8_t*) &rezultat, 4 * sizeof(float));
-			osDelay(ticksDelay);
+			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK){
+				addToWifiBuffer(rezultat, 4, &lastBufferIdx);
+				osSemaphoreRelease(wifiBufferSemaphoreHandle);
+				osDelay(ticksDelay);
+			}
 
 			t += reverse * M_PI * 2 / freq;
 			if (t <= eps || t >= M_PI * 2 - eps) {
@@ -733,8 +805,9 @@ void StartTrilateracija(void *argument) {
 		}
 	}
 
-	/* USER CODE END StartTrilateracija */
+  /* USER CODE END StartTrilateracija */
 }
+
 /* USER CODE BEGIN Header_StartPilotiranje */
 /**
  * @brief Function implementing the pilotiranje thread.
@@ -742,8 +815,9 @@ void StartTrilateracija(void *argument) {
  * @retval None
  */
 /* USER CODE END Header_StartPilotiranje */
-void StartPilotiranje(void *argument) {
-	/* USER CODE BEGIN StartPilotiranje */
+void StartPilotiranje(void *argument)
+{
+  /* USER CODE BEGIN StartPilotiranje */
 
 	if (MODE == MODE_MOCK) {
 		for (;;) {
@@ -764,7 +838,44 @@ void StartPilotiranje(void *argument) {
 			osDelay(2000);
 		}
 	}
-	/* USER CODE END StartPilotiranje */
+  /* USER CODE END StartPilotiranje */
+}
+
+/* USER CODE BEGIN Header_StartPosiljanjeWifi */
+/**
+* @brief Function implementing the posiljanjeWifi thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartPosiljanjeWifi */
+void StartPosiljanjeWifi(void *argument)
+{
+  /* USER CODE BEGIN StartPosiljanjeWifi */
+	// delay
+	float floatsPerSec = HELIX_FREQ * HELIX_STEP * 4 + MADGWICK_FREQ * 4;
+	float freq = floatsPerSec / (WIFI_BUFFER_SIZE * 0.7f); // nekaj rezerve
+	float delay = 1000.0f / freq;
+	uint32_t ticksDelay = (uint32_t) (delay / 1);
+
+  /* Infinite loop */
+	if (MODE == MODE_MOCK) {
+		for (;;) {
+			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK) {
+				if (wifiBufferIdx != 0) {
+					CompressBuffer();
+					CDC_Transmit_FS((uint8_t*) &wifiBuffer, wifiBufferIdx * sizeof(float));
+					wifiBufferIdx = 0;
+				}
+				osSemaphoreRelease(wifiBufferSemaphoreHandle);
+				osDelay(ticksDelay);
+			}
+		}
+	} else if (MODE == MODE_REAL) {
+		for (;;) {
+			// wifi
+		}
+	}
+  /* USER CODE END StartPosiljanjeWifi */
 }
 
 /**

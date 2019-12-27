@@ -7,7 +7,7 @@ PORT = 'COM3'
 OTPT_FILE = 'imu_pos'
 
 port = serial.Serial(PORT, 9600, timeout=1, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
-with open('comport_recv_{}.csv'.format(OTPT_FILE), 'w') as fd:
+with open('ST/python_demos/data/comport_recv_{}.csv'.format(OTPT_FILE), 'w') as fd:
     fd.write('pos_x,pos_y,pos_z,roll,pitch,yaw\n')
     while(True):
         temp = port.read(1)
