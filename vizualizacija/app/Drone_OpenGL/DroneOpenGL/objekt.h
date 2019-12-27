@@ -9,7 +9,7 @@
 
 class Object {
 public:
-    Object(QOpenGLFunctions_3_3_Core *gl_in, QString objFile, QString texFile);
+    Object(QOpenGLFunctions_3_3_Core *gl_in, QString objFile/*, QString texFile*/);
 
     void draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program);
 
@@ -24,7 +24,7 @@ public:
     double scale;
 
 private:
-    void loadTexture(QString texFile);
+    //void loadTexture(QString texFile);
     void loadObj(QString objFile);
 
     QOpenGLFunctions_3_3_Core* gl;
