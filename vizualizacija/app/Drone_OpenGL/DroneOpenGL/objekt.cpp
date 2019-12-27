@@ -1,6 +1,3 @@
-#define TINYOBJLOADER_IMPLEMENTATION // define this in only *one* .cc
-#include "tiny_obj_loader.h"
-
 #include "objekt.h"
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
@@ -11,7 +8,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <QImage>
-//#include "Source/OBJ_Loader.h"
+#include "Source/OBJ_Loader.h"
 
 Object::Object(QOpenGLFunctions_3_3_Core *gl_in, QString objFile, QString texFile) {
     gl = gl_in;
@@ -61,127 +58,27 @@ void Object::loadObj(QString objFile){
     std::vector<glm::vec3> vertices;
 
     std::string inputfile = objFile.toStdString();
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
 
-    std::string warn;
-    std::string err;
+    // Load OBJ file with OBJ_Loader library.
+    objl::Loader loader;
+    bool out = loader.LoadFile(inputfile);
 
-    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, inputfile.c_str());
+    // Go through each loaded mesh and out its contents
+    for (int i = 0; i < loader.LoadedMeshes.size(); i++)
+    {
+        // Copy one of the loaded meshes to be our current mesh
+        objl::Mesh curMesh = loader.LoadedMeshes[i];
 
-    if (!warn.empty()) {
-      std::cout << warn << std::endl;
-    }
-
-    if (!err.empty()) {
-      std::cerr << err << std::endl;
-    }
-
-    if (!ret) {
-        std::cout << "Obj file not found." << std::endl;
-      exit(1);
-    }
-
-    // Loop over shapes
-    for (size_t s = 0; s < shapes.size(); s++) {
-      // Loop over faces(polygon)
-      size_t index_offset = 0;
-      for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
-        int fv = shapes[s].mesh.num_face_vertices[f];
-
-        // Loop over vertices in the face.
-        for (size_t v = 0; v < fv; v++) {
-          // access to vertex
-          tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-          tinyobj::real_t vx = attrib.vertices[3*idx.vertex_index+0];
-          tinyobj::real_t vy = attrib.vertices[3*idx.vertex_index+1];
-          tinyobj::real_t vz = attrib.vertices[3*idx.vertex_index+2];
-          tinyobj::real_t nx = attrib.normals[3*idx.normal_index+0];
-          tinyobj::real_t ny = attrib.normals[3*idx.normal_index+1];
-          tinyobj::real_t nz = attrib.normals[3*idx.normal_index+2];
-          tinyobj::real_t tx = attrib.texcoords[2*idx.texcoord_index+0];
-          tinyobj::real_t ty = attrib.texcoords[2*idx.texcoord_index+1];
-
-          glm::vec3 tempVerticies = glm::vec3(vx, vy, vz);
-          glm::vec3 tempNormals = glm::vec3(nx, ny, nz);
-          glm::vec2 tempTexture = glm::vec2(tx, ty);
-
-          vertices.push_back(tempVerticies);
-          normals.push_back(tempNormals);
-          textureCoords.push_back(tempTexture);
-
-
-          // Optional: vertex colors
-          // tinyobj::real_t red = attrib.colors[3*idx.vertex_index+0];
-          // tinyobj::real_t green = attrib.colors[3*idx.vertex_index+1];
-          // tinyobj::real_t blue = attrib.colors[3*idx.vertex_index+2];
+        // Go through each vertex and print its number,
+        //  position, normal, and texture coordinate
+        for (int j = 0; j < curMesh.Vertices.size(); j++)
+        {
+            data.push_back(curMesh.Vertices[j].Position.X);data.push_back(curMesh.Vertices[j].Position.Y);data.push_back(curMesh.Vertices[j].Position.Z);
+            data.push_back(curMesh.Vertices[j].Normal.X);data.push_back(curMesh.Vertices[j].Normal.Y);data.push_back(curMesh.Vertices[j].Normal.Z);
+            data.push_back(curMesh.Vertices[j].TextureCoordinate.X);data.push_back(curMesh.Vertices[j].TextureCoordinate.Y);
         }
-        index_offset += fv;
-
-        // per-face material
-        shapes[s].mesh.material_ids[f];
-      }
     }
 
-    // Implement OBJ-Loader library.
-    /*objl::Loader loader;
-    loader.LoadFile(objFile.toStdString());
-
-    // TIP: optimization: implement this in LoadFile function.
-
-    for(unsigned int i = 0; i < loader.LoadedVertices.size(); i++){
-        //glm::vec3 tempVert = glm::vec3(loader.LoadedVertices[0]);
-
-    }*/
-
-
-   /* std::ifstream file(objFile.toStdString());
-    if (file.is_open()) {
-        std::string opt;
-        while (file >> opt) {
-            switch(opt[0]){
-            case 'v':
-                if (opt[1] == '\0') {
-                    float xv, yv, zv;
-                    file >> xv >> yv >> zv;
-                    vertices.push_back(glm::vec3(xv, yv, zv));
-                } else if (opt[1] == 't') {
-                    float xt, yt;
-                    file >> xt >> yt;
-                    textureCoords.push_back(glm::vec2(xt, yt));
-                } else if (opt[1] == 'n') {
-                    float xn, yn, zn;
-                    file >> xn >> yn >> zn;
-                    normals.push_back(glm::vec3(xn, yn, zn));
-                }
-                break;
-            case 'f':
-                for (int i = 0; i < 3; i++) {
-                    char temp[256];
-                    file >> temp;
-
-                    unsigned int v, t, n;
-                    int matches = sscanf(temp, "%d/%d/%d", &v, &t, &n);
-                    if (matches != 3){
-                        printf("File can't be read by our simple parser :-( Try exporting with other options\n");
-                        return;
-                    }
-                    v--; t--; n--;
-
-                    data.push_back(vertices[v].x); data.push_back(vertices[v].y); data.push_back(vertices[v].z);
-                    data.push_back(normals[n].x); data.push_back(normals[n].y); data.push_back(normals[n].z);
-                    data.push_back(textureCoords[t].x); data.push_back(textureCoords[t].y);
-                }
-
-                break;
-            }
-        }
-        file.close();
-    }
-    else {
-        std::cout << "Obj file not found." << std::endl;
-    }*/
 }
 
 void Object::loadTexture(QString texFile){
