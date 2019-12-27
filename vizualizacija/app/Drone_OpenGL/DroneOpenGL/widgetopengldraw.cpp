@@ -237,24 +237,6 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             roll -= glm::pi<double>() / 30.0;
             updateUpVec();
             break;
-        case Qt::Key::Key_J:
-            camPos += glm::vec3(0.1, 0.0, 0.0);
-            break;
-        case Qt::Key::Key_K:
-            camPos -= glm::vec3(0.1, 0.0, 0.0);
-            break;
-        case Qt::Key::Key_L:
-            camPos += glm::vec3(0.0, 0.1, 0.0);
-            break;
-        case Qt::Key::Key_Semicolon:
-            camPos -= glm::vec3(0.0, 0.1, 0.0);
-            break;
-        case Qt::Key::Key_Apostrophe:
-            camPos += glm::vec3(0.0, 0.0, 0.1);
-            break;
-        case Qt::Key::Key_Backslash:
-            camPos -= glm::vec3(0.0, 0.0, 0.1);
-            break;
         case Qt::Key::Key_Z:
             objekti[focusObject]->scale*=1.1;
             break;
@@ -274,6 +256,42 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             focusObject++;
             focusObject %= objekti.size();
             break;
+    }
+    update();
+}
+
+
+void WidgetOpenGLDraw::wheelEvent(QWheelEvent *event){
+    makeCurrent();
+    // Camera, Z translation.
+
+    if(event->delta() > 0)
+        camPos -= glm::vec3(0.0, 0.0, 0.1);
+    else
+        camPos += glm::vec3(0.0, 0.0, 0.1);
+
+    update();
+}
+
+void WidgetOpenGLDraw::mousePressEvent(QMouseEvent *event){
+    makeCurrent();
+
+    if (event->button() == Qt::MiddleButton)
+        invertTranslation = !invertTranslation;
+
+    if (event->button()==Qt::LeftButton){
+        if(!invertTranslation)
+            camPos += glm::vec3(0.1, 0.0, 0.0);
+        else
+            camPos -= glm::vec3(0.1, 0.0, 0.0);
+    }
+
+    if(event->button()==Qt::RightButton)
+    {
+        if(!invertTranslation)
+            camPos += glm::vec3(0.0, 0.1, 0.0);
+        else
+            camPos -= glm::vec3(0.0, 0.1, 0.0);
     }
 
     update();

@@ -36,13 +36,17 @@ private:
     double yaw;
     double roll;
 
+    // other
     unsigned int projMode = 0;
+    bool invertTranslation = false;
 protected:
 	void paintGL() override;
 	void initializeGL() override;
 	void resizeGL(int w, int h) override;
 
     void keyPressEvent(QKeyEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
     void readFile(std::string path, std::string &save);
 signals:
 
