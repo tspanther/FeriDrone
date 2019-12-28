@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <objekt.h>
+#include <camera.h>
 
 class QOpenGLFunctions_3_3_Core;
 class WidgetOpenGLDraw : public QOpenGLWidget{
@@ -16,9 +17,6 @@ private:
     void compileShaders();
 	void printProgramInfoLog(GLuint obj);
     void printShaderInfoLog(GLuint obj);
-    void updateUpVec();
-    void updateLookAt();
-    void setDefaults();
     glm::mat4 createProjectionMatrix();
 
     QOpenGLFunctions_3_3_Core* gl;
@@ -26,15 +24,11 @@ private:
 
     // objects
     std::vector<Object*> objekti;
-    unsigned int focusObject;
 
     // cam
-    glm::vec3 camPos;
-    glm::vec3 lookAt;
-    glm::vec3 camUp;
-    double pitch;
-    double yaw;
-    double roll;
+    Camera thirdP;
+    Camera firstP;
+    Camera* activeCam;
 
     // other
     unsigned int projMode = 0;

@@ -6,11 +6,13 @@ TARGET = RG_Template
 TEMPLATE = app
 
 SOURCES += main.cpp\
+        camera.cpp \
         mainwindow.cpp \
         objekt.cpp \
         widgetopengldraw.cpp
 
 HEADERS  += mainwindow.h \
+        camera.h \
         objekt.h \
         widgetopengldraw.h
 
