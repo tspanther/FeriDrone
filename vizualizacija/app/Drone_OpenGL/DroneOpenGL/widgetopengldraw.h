@@ -17,6 +17,7 @@ private:
     void compileShaders();
 	void printProgramInfoLog(GLuint obj);
     void printShaderInfoLog(GLuint obj);
+    void playAnimation();
     glm::mat4 createProjectionMatrix();
 
     QOpenGLFunctions_3_3_Core* gl;

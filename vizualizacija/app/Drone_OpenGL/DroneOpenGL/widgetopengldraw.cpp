@@ -14,6 +14,9 @@
 WidgetOpenGLDraw::WidgetOpenGLDraw(QWidget *parent) : QOpenGLWidget(parent) {
     QWidget::setFocusPolicy(Qt::StrongFocus);
     activeCam = &thirdP;
+    setMouseTracking(true);
+    current = QPoint(width()/2, height()/2);
+    ShowCursor(false);
 }
 
 WidgetOpenGLDraw::~WidgetOpenGLDraw() {
@@ -142,12 +145,37 @@ void WidgetOpenGLDraw::paintGL() {
     }
 }
 
+void WidgetOpenGLDraw::playAnimation(){
+    std::ifstream f("../DroneOpenGL/flight.csv");
+    int idx;
+    double roll, pitch, yaw;
+    float pos_x, pos_y, pos_z;
+    while (f >> idx){
+        f >> pos_x >> pos_y >> pos_z >> roll >> pitch >> yaw;
+        firstP.roll = roll;
+        firstP.pitch = pitch;
+        firstP.yaw = yaw;
+        firstP.camPos.x = pos_x;
+        firstP.camPos.y = pos_y + 4; // za dronom malo
+        firstP.camPos.z = pos_z;
+
+        objekti[0]->objx0 = pos_x;
+        objekti[0]->objy0 = pos_y;
+        objekti[0]->objz0 = pos_z;
+        objekti[0]->roll = roll;
+        objekti[0]->pitch = pitch;
+        objekti[0]->yaw = yaw;
+
+        paintGL();
+    }
+}
+
 void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
     makeCurrent();
 
     glm::vec3 projLookAt = glm::vec3(thirdP.lookAt.x, 0.0f, thirdP.lookAt.z);
     glm::vec3 projLookAtFlip = glm::vec3(thirdP.lookAt.z, 0.0f, thirdP.lookAt.x);
-    float speed = 1.0f; // param
+    float speed = 0.02f; // param
 
     switch(event->key()) {
     /*
@@ -276,6 +304,10 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
                 activeCam = &thirdP;
             }
             break;
+        case Qt::Key::Key_2:
+            activeCam = &firstP;
+            playAnimation();
+            break;
 
     }
     update();
@@ -334,20 +366,30 @@ void WidgetOpenGLDraw::mousePressEvent(QMouseEvent *event){
 
 void WidgetOpenGLDraw::mouseReleaseEvent(QMouseEvent *event){
     makeCurrent();
-    leftMouseButton = false;
-    rightMouseButton = false;
+    // do we need this?
+    //leftMouseButton = false;
+    //rightMouseButton = false;
     update();
 }
 
 void WidgetOpenGLDraw::mouseMoveEvent(QMouseEvent *event){
+    /*
+     * todo: Stefan::
+     * ideja je, da bi miska bila v oknu nevidna (to je narjeno, v konstruktorju je klic funkcije)
+     * kaj bi blo treba nardit, je to, da nikoli ne prides z misko na rob
+     *  - jaz sem nekaj gledal, mogoce bi slo z kako funkcijo skos postavit misko na sredino potem, ko preberes da se je premaknila
+     *  - lahko tudi da ko prides z misko na rob, dalje vrtis kamero v tisto smer (kot da bi se miska premikala dalje - ven iz okna - kar se ne more)
+     *
+     * sej ves, ce v igrici misko premikas ne vem po mizi 1 meter, bos se zavrtel 3x okoli sebe. pri nas pa ko prides na rob okna, se nikamor ne mores vec premaknit
+     */
     makeCurrent();
 
     QPoint point = event->pos();
 
-    double sensitivity = 0.05;
+    double sensitivity = 0.001;
 
-    thirdP.yaw += sensitivity * (point.rx() - current.rx());
-    thirdP.pitch += sensitivity * (point.ry() - current.ry());
+    thirdP.yaw += sensitivity * ((point.rx() - current.rx()));
+    thirdP.pitch += sensitivity * (-(point.ry() - current.ry()));
     thirdP.updateLookAt();
 
     /*
@@ -390,7 +432,7 @@ void WidgetOpenGLDraw::mouseMoveEvent(QMouseEvent *event){
     }
     */
 
-    current=point;
+    current = point;//QPoint(width()/2, height()/2);
 
     update();
 }

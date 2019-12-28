@@ -15,12 +15,12 @@ public:
 
     ~Object();
 
-    double objx0;
-    double objy0;
-    double objz0;
-    int objrotX;
-    int objrotY;
-    int objrotZ;
+    float objx0;
+    float objy0;
+    float objz0;
+    double pitch;
+    double yaw;
+    double roll;
     double scale;
 
 private:
