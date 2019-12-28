@@ -7,10 +7,10 @@ vs / srds / mm
             X hardware: gyro, accel, magnet
             - kalibracija magnetometra
             X pretvorba v roll,pitch,yaw
-            - posiljanje podatkov; queue, new task, sinhronizacija
+            X posiljanje podatkov; queue, new task, sinhronizacija
             A kompresija
             - prejemanje podatkov pc side
-                - C++ comport
+                - C++ comport / wifi / iz datoteke
                 A dekompresija
         - trilateracija
             - hardware: mikrofon
