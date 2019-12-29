@@ -17,8 +17,11 @@ WidgetOpenGLDraw::WidgetOpenGLDraw(QWidget *parent) : QOpenGLWidget(parent) {
     QWidget::setFocusPolicy(Qt::StrongFocus);
     activeCam = &thirdP;
     setMouseTracking(true);
-    current = QPoint(width()/2, height()/2);
-    ShowCursor(false);
+    // Wrong width & height;
+    //current = QPoint(QWidget::width()/2, QWidget::height()/2);
+    // ShowCursor(false);
+    /* Cursor se v tem primeru skrije samo znotraj predvidenega območja izrisa */
+    QWidget::setCursor(Qt::BlankCursor);
 }
 
 WidgetOpenGLDraw::~WidgetOpenGLDraw() {
@@ -82,6 +85,9 @@ void WidgetOpenGLDraw::compileShaders() {
 }
 
 void WidgetOpenGLDraw::initializeGL() {
+
+    current = QPoint(QWidget::width()/2, QWidget::height()/2);
+
     std::cout << "OpenGL context version: "<< context()->format().majorVersion() <<"." <<context()->format().minorVersion()<<std::endl;
 
     gl = context()->versionFunctions<QOpenGLFunctions_3_3_Core>();
@@ -366,6 +372,10 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
         case Qt::Key::Key_BracketLeft:
             sign*=(-1);
             break;
+        // DEBUG PURPOSES
+        case Qt::Key::Key_Escape:
+                exit(-1);
+            break;
 
     }
     update();
@@ -440,15 +450,33 @@ void WidgetOpenGLDraw::mouseMoveEvent(QMouseEvent *event){
      *
      * sej ves, ce v igrici misko premikas ne vem po mizi 1 meter, bos se zavrtel 3x okoli sebe. pri nas pa ko prides na rob okna, se nikamor ne mores vec premaknit
      */
+
+    /* Super božna implementacija rotacije kamere z miško */
+    /* Deluje, ampak mam velike probleme z jiterringom */
+    /* Kak bi to fixal nevem, sem kar nekaj časa ugotavljal ampak mi ni jasno*/
+
     makeCurrent();
 
     QPoint point = event->pos();
 
     double sensitivity = 0.001;
 
-    thirdP.yaw += sensitivity * ((point.rx() - current.rx()));
-    thirdP.pitch += sensitivity * (-(point.ry() - current.ry()));
+    QPoint p = QWidget::mapFromGlobal(QCursor::pos());
+    unsigned int rangeExtender = 1;
+
+    int deltaX = point.rx() - current.rx();
+    int deltaY = point.ry() - current.ry();
+
+    // Check prohibited bounds.
+    if(p.x() < 30 || p.y() < 30 || p.x() > QWidget::width() - 30 || p.y() > QWidget::height() - 30){
+        QCursor::setPos(mapToGlobal(current));
+        rangeExtender = 2;
+    }
+
+    thirdP.yaw += sensitivity * (deltaX * (int)rangeExtender);
+    thirdP.pitch += sensitivity * (-(deltaY) * (int)rangeExtender);
     thirdP.updateLookAt();
+
 
     /*
      *  Stefko: miska rotira kamero kot dogovorjeno
@@ -491,6 +519,7 @@ void WidgetOpenGLDraw::mouseMoveEvent(QMouseEvent *event){
     */
 
     current = point;//QPoint(width()/2, height()/2);
+
 
     update();
 }
