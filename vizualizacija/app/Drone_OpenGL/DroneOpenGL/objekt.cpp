@@ -19,11 +19,20 @@ Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char
     roll = 0;
     pitch = 0;
     yaw = 0;
+
+    offset = glm::vec3(0.0f, 0.0f, 0.0f);
+    rollo = 0.0;
+    pitcho = 0.0;
+    yawo = 0.0;
+
     scale = 1.0;
 
-    loadObj(objFile);
-    loadTexture(texFile);
+    loadObj(objFile, &data);
+    loadTexture(texFile, &tex_id);
+
 /*
+ *  Triangle test
+ *
     data.clear();
     std::vector<float> a = {
             -10.0, -10.0, -5.0, 1.0, 1.0, 1.0, 0.1, 0.1,
@@ -34,7 +43,7 @@ Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char
     for (unsigned int i = 0; i< 8*3; i++){
         data.push_back(a[i]);
     }
-    */
+*/
 
     gl->glGenVertexArrays(1, &VAO);
     gl->glBindVertexArray(VAO);
@@ -52,10 +61,10 @@ Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char
 
 void Object::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     glm::mat4 M = glm::mat4(1);
-    M = glm::translate(M, glm::vec3(objx0, objy0, objz0)); // object move
-    M = glm::rotate_slow(M, (float)yaw, glm::vec3(1, 0, 0)); // object rotate
-    M = glm::rotate_slow(M, (float)pitch, glm::vec3(0, 1, 0));
-    M = glm::rotate_slow(M, (float)roll, glm::vec3(0, 0, 1));
+    M = glm::translate(M, glm::vec3(objx0, objy0, objz0) + offset); // object move
+    M = glm::rotate_slow(M, (float)(yaw + yawo) , glm::vec3(1, 0, 0)); // object rotate
+    M = glm::rotate_slow(M, (float)(pitch + pitcho), glm::vec3(0, 1, 0));
+    M = glm::rotate_slow(M, (float)(roll + rollo), glm::vec3(0, 0, 1));
     M = glm::scale_slow(M, glm::vec3(scale, scale, scale));
     glm::mat4 PVM = P * V * M;
 
@@ -71,27 +80,23 @@ Object::~Object(){
     gl->glDeleteVertexArrays(1,&VAO);
 }
 
-void Object::loadTexture(const char* texFile){
+void Object::loadTexture(const char* texFile, GLuint* texture_id){
     QImage img;
     img.load(texFile);
     img = img.convertToFormat(QImage::Format_RGBA8888);
 
-    gl->glGenTextures(1, &tex_id);
-    gl->glBindTexture(GL_TEXTURE_2D, tex_id);
+    gl->glGenTextures(1, texture_id);
+    gl->glBindTexture(GL_TEXTURE_2D, *texture_id);
     gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.width(), img.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, img.bits());
-    gl->glGenerateMipmap(GL_TEXTURE_2D);
 
+    gl->glGenerateMipmap(GL_TEXTURE_2D);
     gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void Object::loadObj(const char* objFile){
-    std::vector<glm::vec2> textureCoords;
-    std::vector<glm::vec3> normals;
-    std::vector<glm::vec3> vertices;
-
+void Object::loadObj(const char* objFile, std::vector<float>* datav){
     // Load OBJ file with OBJ_Loader library.
     objl::Loader loader;
     bool out = loader.LoadFile(objFile);
@@ -106,9 +111,9 @@ void Object::loadObj(const char* objFile){
         //  position, normal, and texture coordinate
         for (unsigned int j = 0; j < curMesh.Vertices.size(); j++)
         {
-            data.push_back(curMesh.Vertices[j].Position.X);          data.push_back(curMesh.Vertices[j].Position.Y);          data.push_back(curMesh.Vertices[j].Position.Z);
-            data.push_back(curMesh.Vertices[j].Normal.X);            data.push_back(curMesh.Vertices[j].Normal.Y);            data.push_back(curMesh.Vertices[j].Normal.Z);
-            data.push_back(curMesh.Vertices[j].TextureCoordinate.X); data.push_back(curMesh.Vertices[j].TextureCoordinate.Y);
+            datav->push_back(curMesh.Vertices[j].Position.X);          datav->push_back(curMesh.Vertices[j].Position.Y);          datav->push_back(curMesh.Vertices[j].Position.Z);
+            datav->push_back(curMesh.Vertices[j].Normal.X);            datav->push_back(curMesh.Vertices[j].Normal.Y);            datav->push_back(curMesh.Vertices[j].Normal.Z);
+            datav->push_back(curMesh.Vertices[j].TextureCoordinate.X); datav->push_back(curMesh.Vertices[j].TextureCoordinate.Y);
         }
     }
 

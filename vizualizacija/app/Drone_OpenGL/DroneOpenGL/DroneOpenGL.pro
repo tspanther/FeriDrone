@@ -7,12 +7,14 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         camera.cpp \
+        drone.cpp \
         mainwindow.cpp \
         objekt.cpp \
         widgetopengldraw.cpp
 
 HEADERS  += mainwindow.h \
         camera.h \
+        drone.h \
         objekt.h \
         widgetopengldraw.h
 

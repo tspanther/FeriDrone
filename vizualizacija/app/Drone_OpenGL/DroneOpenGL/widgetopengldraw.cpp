@@ -7,6 +7,8 @@
 #include <memory>
 #include <fstream>
 #include <QOpenGLFunctions_3_3_Core>
+#include <chrono>
+#include <thread>
 #include <QApplication>
 #include <QKeyEvent>
 #include <string>
@@ -96,14 +98,17 @@ void WidgetOpenGLDraw::initializeGL() {
     gl->glEnable(GL_DEPTH_TEST);
     //glDisable(GL_CULL_FACE);
 
-    std::vector<const char*> objFiles = { "../DroneOpenGL/models/drone.obj" };
-    std::vector<const char*> texFiles = { "../DroneOpenGL/models/color2.jpg" };
+    std::vector<const char*> objFiles = { "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/Low-Poly_Models.obj" };
+    std::vector<const char*> texFiles = { "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/plain_grey.jpg" };
 
     for (unsigned int i = 0; i < objFiles.size(); i++){
         objekti.push_back(new Object(gl, objFiles[i], texFiles[i]));
     }
 
-    thirdP.setDefaults();
+    // debug --- empiricni offseti za objekte
+    objekti[0]->offset = glm::vec3(-0.1, -0.06, 0.52);
+    objekti[0]->pitcho = 4.84;
+    objekti[1]->offset = glm::vec3(0, -0.4, 0);
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {
@@ -145,29 +150,55 @@ void WidgetOpenGLDraw::paintGL() {
     }
 }
 
-void WidgetOpenGLDraw::playAnimation(){
+void WidgetOpenGLDraw::stepAnimation(){
+    int step = 1;
+    double pos_x, pos_y, pos_z, roll, pitch, yaw;
+
+    pos_x = animation[animationIdx * 6 + 0];
+    pos_y = animation[animationIdx * 6 + 1];
+    pos_z = animation[animationIdx * 6 + 2];
+    roll = animation[animationIdx * 6 + 3];
+    pitch = animation[animationIdx * 6 + 4];
+    yaw = animation[animationIdx * 6 + 5];
+
+    firstP.pitch = 0.0 ;//+ pitch;
+    firstP.yaw = -glm::pi<double>() / 2 ;// + yaw;
+    firstP.roll = glm::pi<double>() / 2 ;//+ roll;
+    firstP.camPos.x = pos_x;
+    firstP.camPos.y = pos_y;
+    firstP.camPos.z = pos_z + 3; // za dronom malo
+
+    firstP.updateLookAt();
+    firstP.updateUpVec();
+
+    objekti[0]->objx0 = pos_x;
+    objekti[0]->objy0 = pos_y;
+    objekti[0]->objz0 = pos_z;
+    objekti[0]->roll = roll;
+    objekti[0]->pitch = pitch;
+    objekti[0]->yaw = yaw;
+
+    paintGL();
+    animationIdx+=step;
+    animationIdx%=animation.size()/6;
+}
+
+void WidgetOpenGLDraw::loadAnimation(){
     std::ifstream f("../DroneOpenGL/flight.csv");
     int idx;
     double roll, pitch, yaw;
     float pos_x, pos_y, pos_z;
+    animation.clear();
     while (f >> idx){
         f >> pos_x >> pos_y >> pos_z >> roll >> pitch >> yaw;
-        firstP.roll = roll;
-        firstP.pitch = pitch;
-        firstP.yaw = yaw;
-        firstP.camPos.x = pos_x;
-        firstP.camPos.y = pos_y + 4; // za dronom malo
-        firstP.camPos.z = pos_z;
-
-        objekti[0]->objx0 = pos_x;
-        objekti[0]->objy0 = pos_y;
-        objekti[0]->objz0 = pos_z;
-        objekti[0]->roll = roll;
-        objekti[0]->pitch = pitch;
-        objekti[0]->yaw = yaw;
-
-        paintGL();
+        animation.push_back(pos_x);
+        animation.push_back(pos_y);
+        animation.push_back(pos_z);
+        animation.push_back(roll);
+        animation.push_back(pitch);
+        animation.push_back(yaw);
     }
+    animationIdx = 0;
 }
 
 void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
@@ -305,8 +336,35 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             }
             break;
         case Qt::Key::Key_2:
-            activeCam = &firstP;
-            playAnimation();
+            loadAnimation();
+            break;
+        case Qt::Key::Key_3:
+            stepAnimation();
+            break;
+        case Qt::Key::Key_4:
+            objekti[currObj]->rollo+=speed*sign;
+            break;
+        case Qt::Key::Key_5:
+            objekti[currObj]->pitcho+=speed*sign;
+            break;
+        case Qt::Key::Key_6:
+            objekti[currObj]->yawo+=speed*sign;
+            break;
+        case Qt::Key::Key_7:
+            objekti[currObj]->offset.x+=speed*sign;
+            break;
+        case Qt::Key::Key_8:
+            objekti[currObj]->offset.y+=speed*sign;
+            break;
+        case Qt::Key::Key_9:
+            objekti[currObj]->offset.z+=speed*sign;
+            break;
+        case Qt::Key::Key_BracketRight:
+            currObj++;
+            currObj%=2;
+            break;
+        case Qt::Key::Key_BracketLeft:
+            sign*=(-1);
             break;
 
     }

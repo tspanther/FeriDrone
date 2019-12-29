@@ -23,9 +23,12 @@ public:
     double roll;
     double scale;
 
-private:
-    void loadTexture(const char* texFile);
-    void loadObj(const char* objFile);
+    glm::vec3 offset;
+    double rollo, pitcho, yawo;
+
+protected:
+    void loadTexture(const char* texFile, GLuint* texture_id);
+    void loadObj(const char* objFile, std::vector<float>* datav);
 
     QOpenGLFunctions_3_3_Core* gl;
     GLuint VBO;

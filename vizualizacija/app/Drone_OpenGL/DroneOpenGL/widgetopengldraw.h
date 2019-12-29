@@ -6,6 +6,7 @@
 #include <glm/ext.hpp>
 #include <objekt.h>
 #include <camera.h>
+#include <vector>
 
 class QOpenGLFunctions_3_3_Core;
 class WidgetOpenGLDraw : public QOpenGLWidget{
@@ -17,7 +18,8 @@ private:
     void compileShaders();
 	void printProgramInfoLog(GLuint obj);
     void printShaderInfoLog(GLuint obj);
-    void playAnimation();
+    void loadAnimation();
+    void stepAnimation();
     glm::mat4 createProjectionMatrix();
 
     QOpenGLFunctions_3_3_Core* gl;
@@ -30,6 +32,13 @@ private:
     Camera thirdP;
     Camera firstP;
     Camera* activeCam;
+
+    // premikanje objektov ---- debug
+    int currObj = 0;
+    int sign = 1;
+
+    std::vector<double> animation;
+    int animationIdx= 0;
 
     // other
     unsigned int projMode = 0;
