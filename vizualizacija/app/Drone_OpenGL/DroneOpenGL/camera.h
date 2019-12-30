@@ -19,6 +19,7 @@ public:
     // factor of zoom;;
     // we translate camera just before generating PVM by (zoom * normalize(lookAt))
     double zoom;
+    bool lockToThirdPersonCamera;
 
     void updateUpVec();
     void updateLookAt();
