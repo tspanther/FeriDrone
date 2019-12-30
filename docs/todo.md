@@ -5,7 +5,7 @@ vs / srds / mm
 	features
         - IMU
             X hardware: gyro, accel, magnet
-            - kalibracija magnetometra
+            - kalibracija magnetome`tra
             X pretvorba v roll,pitch,yaw
             X posiljanje podatkov; queue, new task, sinhronizacija
             A kompresija
@@ -39,21 +39,40 @@ rg
 		- 3rd person kamera (premikanje, rotiranje..)
 		+ teksture, sencenje
 	- UI / logic
-		- kontrola kamer
+		X kontrola kamer
 		- loadanje/izbira scene
-	- lokacija, rotacija drona
+	- loacija, rotacija drona
 		- filtriranje trilateracija / IMU podatkov
-		- updatanje M
+		X updatanje M
 			- dron (translacija - trilateracija, rotacija - IMU)
 			- vektorji lastnosti -||-
 	- 1st person
 		- updatanje PV glede na trilateracijo in IMU
-			- camPos; trilateracija
+			X camPos; trilateracija
 			- upVec, lookAt; IMU
 	- trajektorija poti
 		- izrisovanje pravokotnikov/kvadrov pod koordinatami drona
 	+ minigame
 		- upravljanje
 			- dekodiranje signala s controllerja
-			- fizikalni model
+		- fizikalni model
 		- metanje bomb
+
+objectives;
+
+OpenGL
+N popravit velocity arrow
+    - datoteka flight (pozicije, nakloni), ki je preprostejsa - kvadrat, staticen naklon
+S izrisovat trajektorijo
+N refaktorirat kodo v bolj sustainable
+N FPkamera - roll, pitch, yaw
+- porocilo
+
+blender
+- applyjat teksture na drone in terrain
+- prestavit drone v blenderju na izhodisce in ga obrnit prav
+    - umaknit offsete za drone
+
+HW
+- kalibracija magnetometra
+N usposobit ToF
