@@ -3,6 +3,7 @@
 
 #include <objekt.h>
 #include <camera.h>
+#include <queue>
 
 class drone : public Object
 {
@@ -15,7 +16,8 @@ public:
     // 1stP camera
     Camera cam;
 private:
-    glm::vec3 prevLocation;
+    std::queue<glm::vec3> prevLocations;
+    static unsigned int prevLocWindowSize;
 
     // convenience
     glm::vec3 lookAt;
