@@ -1,15 +1,17 @@
 #include "drone.h"
 
+unsigned int drone::prevLocWindowSize = 5;
+
 drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow_1, const char* texFileArrow_2, const char* texFileArrow_3) : Object(gl_in, objFile, texFile) {
     lookAt = glm::vec3(0.0, 0.0, -1.0);
     upVec = glm::vec3(0.0, 1.0, 0.0);
 
     Object::loadObj(objFileArrow, &data_ArrLA);
     Object::loadObj(objFileArrow, &data_ArrUV);
-    //Object::loadObj(objFileArrow, &data_ArrVEL);
+    Object::loadObj(objFileArrow, &data_ArrVEL);
     Object::loadTexture(texFileArrow_1, &tex_id_ArrLA);
     Object::loadTexture(texFileArrow_2, &tex_id_ArrUV);
-    //Object::loadTexture(texFileArrow_3, &tex_id_ArrVEL);
+    Object::loadTexture(texFileArrow_3, &tex_id_ArrVEL);
 
     gl->glGenVertexArrays(1, &VAO_ArrLA);
     gl->glBindVertexArray(VAO_ArrLA);
@@ -36,7 +38,7 @@ drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* 
     gl->glEnableVertexAttribArray(1);
     gl->glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     gl->glEnableVertexAttribArray(2);
-/*
+
     gl->glGenVertexArrays(1, &VAO_ArrVEL);
     gl->glBindVertexArray(VAO_ArrVEL);
     gl->glGenBuffers(1, &VBO_ArrVEL);
@@ -49,17 +51,22 @@ drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* 
     gl->glEnableVertexAttribArray(1);
     gl->glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     gl->glEnableVertexAttribArray(2);
-*/
+
 }
 
 drone::~drone(){
     gl->glDeleteVertexArrays(1, &VAO);
     gl->glDeleteVertexArrays(1,&VAO_ArrLA);
     gl->glDeleteVertexArrays(1,&VAO_ArrUV);
-    //gl->glDeleteVertexArrays(1,&VAO_ArrVEL);
+    gl->glDeleteVertexArrays(1,&VAO_ArrVEL);
 }
 
 void drone::moveTo(glm::vec3 vec){
+    prevLocations.push(vec);
+    if (prevLocations.size() > prevLocWindowSize){
+        prevLocations.pop();
+    }
+
     pos=vec;
 
     cam.camPos = pos + offset + 3.0f * glm::vec3(0.0f, 0.0f, 1.0f);// * lookAt;
@@ -119,8 +126,27 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "PVM"), 1, GL_FALSE, glm::value_ptr(PVM));
     gl->glDrawArrays(GL_TRIANGLES, 0, data_ArrUV.size() * sizeof(float));
 
-    /*
-     * todo: poracunat vektor hitrosti, ga izrisat
-    */
+    // velocity Arrow
+    if (prevLocations.size() == 0){
+        return;
+    }
+    glm::vec3 velocity = glm::normalize(prevLocations.back() - prevLocations.front());
+    float v_pitch = asin(-velocity.y);
+    float v_yaw = atan2(velocity.x, velocity.z);
+    auto vel_unscaled = prevLocations.back() - prevLocations.front();
+    float length = sqrt(vel_unscaled.x * vel_unscaled.x + vel_unscaled.y * vel_unscaled.y + vel_unscaled.z * vel_unscaled.z);
 
+    M = glm::mat4(1);
+    M = glm::translate(M, pos + offset); // object move
+    M = glm::rotate(M, v_yaw * float(glm::pi<double>()) + float(glm::pi<double>() / 2), glm::vec3(0, 1, 0)); // object rotate
+    M = glm::rotate(M, v_pitch * float(glm::pi<double>()) + float(glm::pi<double>() / 2), glm::vec3(0, 0, 1));
+    M = glm::scale(M, /*length * 20.0f **/ arrScale * glm::vec3(scale, scale, scale));
+    PVM = P * V * M;
+
+    gl->glBindVertexArray(VAO_ArrVEL);
+    gl->glBindTexture(GL_TEXTURE_2D, tex_id_ArrVEL);
+    gl->glBindBuffer(GL_ARRAY_BUFFER, VBO_ArrVEL);
+
+    gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "PVM"), 1, GL_FALSE, glm::value_ptr(PVM));
+    gl->glDrawArrays(GL_TRIANGLES, 0, data_ArrVEL.size() * sizeof(float));
 }
