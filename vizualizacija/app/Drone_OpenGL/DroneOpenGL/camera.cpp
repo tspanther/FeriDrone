@@ -34,4 +34,5 @@ void Camera::setDefaults(){
     pitch = 0.0;
     yaw = -glm::pi<double>() / 2;
     roll = glm::pi<double>() / 2;
+    lockToThirdPersonCamera = false;
 }

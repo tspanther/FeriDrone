@@ -42,8 +42,9 @@ private:
 
     // other
     unsigned int projMode = 0;
-    bool invert = false;
-    bool leftMouseButton = false, rightMouseButton = false;
+    //bool invert = false;
+    //bool leftMouseButton = false, rightMouseButton = false;
+    bool test = false;
     QPoint current = QPoint(0, 0);
 protected:
 	void paintGL() override;

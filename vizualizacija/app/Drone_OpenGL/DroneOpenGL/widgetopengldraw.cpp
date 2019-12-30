@@ -21,7 +21,7 @@ WidgetOpenGLDraw::WidgetOpenGLDraw(QWidget *parent) : QOpenGLWidget(parent) {
     //current = QPoint(QWidget::width()/2, QWidget::height()/2);
     // ShowCursor(false);
     /* Cursor se v tem primeru skrije samo znotraj predvidenega območja izrisa */
-    QWidget::setCursor(Qt::BlankCursor);
+    // QWidget::setCursor(Qt::BlankCursor);
 }
 
 WidgetOpenGLDraw::~WidgetOpenGLDraw() {
@@ -372,11 +372,10 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
         case Qt::Key::Key_BracketLeft:
             sign*=(-1);
             break;
-        // DEBUG PURPOSES
         case Qt::Key::Key_Escape:
-                exit(-1);
+            thirdP.lockToThirdPersonCamera = false;
+            QWidget::setCursor(Qt::ArrowCursor);
             break;
-
     }
     update();
 }
@@ -437,6 +436,8 @@ void WidgetOpenGLDraw::mouseReleaseEvent(QMouseEvent *event){
     // do we need this?
     //leftMouseButton = false;
     //rightMouseButton = false;
+    thirdP.lockToThirdPersonCamera = true;
+    QWidget::setCursor(Qt::BlankCursor);
     update();
 }
 
@@ -451,75 +452,25 @@ void WidgetOpenGLDraw::mouseMoveEvent(QMouseEvent *event){
      * sej ves, ce v igrici misko premikas ne vem po mizi 1 meter, bos se zavrtel 3x okoli sebe. pri nas pa ko prides na rob okna, se nikamor ne mores vec premaknit
      */
 
-    /* Super božna implementacija rotacije kamere z miško */
-    /* Deluje, ampak mam velike probleme z jiterringom */
-    /* Kak bi to fixal nevem, sem kar nekaj časa ugotavljal ampak mi ni jasno*/
+    /* Rotacija kamere v 3D okolju: zdaj deluje OK */
+    /* Način rešitve: Cursor je "zaklenjen" na sredino (čeprav dejansko ni, saj se še vedno čuti "preskakovanje").*/
+    /* Na ta način bi moral cursor vedno ostati v sredini (razen če mam nevem 2,3 ali več screenov, takrat če hitro potegneš miško lahko da še vedno pobegne) */
+    /* Možna izboljšava: Limitiranje npr. Yaw-a (zdaj se lahko yawaš over and over again, če bo čas mogoče spisati kake meje, znotraj katerih kamera operira) */
+
 
     makeCurrent();
 
-    QPoint point = event->pos();
+    if(thirdP.lockToThirdPersonCamera){
+        double sensitivity = 0.004;
 
-    double sensitivity = 0.001;
+        thirdP.yaw += sensitivity * (event->x() - current.x());
+        thirdP.pitch += sensitivity * (-(event->y() - current.y()));
+        thirdP.updateLookAt();
 
-    QPoint p = QWidget::mapFromGlobal(QCursor::pos());
-    unsigned int rangeExtender = 1;
-
-    int deltaX = point.rx() - current.rx();
-    int deltaY = point.ry() - current.ry();
-
-    // Check prohibited bounds.
-    if(p.x() < 30 || p.y() < 30 || p.x() > QWidget::width() - 30 || p.y() > QWidget::height() - 30){
-        QCursor::setPos(mapToGlobal(current));
-        rangeExtender = 2;
+        QPoint glob = mapToGlobal(QPoint(width()/2,height()/2));
+        QCursor::setPos(glob);
+        current = QPoint(width()/2,height()/2);
     }
-
-    thirdP.yaw += sensitivity * (deltaX * (int)rangeExtender);
-    thirdP.pitch += sensitivity * (-(deltaY) * (int)rangeExtender);
-    thirdP.updateLookAt();
-
-
-    /*
-     *  Stefko: miska rotira kamero kot dogovorjeno
-     *
-    if(leftMouseButton && !invert){
-        if(deltaX>deltaY){
-            if(current.rx()<point.rx()){
-                camPos += glm::vec3(0.1, 0.0, 0.0);
-            }else if(current.rx()>point.rx()){
-                camPos -= glm::vec3(0.1, 0.0, 0.0);
-            }
-        }
-    }else if(rightMouseButton && !invert){
-        if(deltaX<=deltaY){
-            if(current.ry()>point.ry()){
-                camPos += glm::vec3(0.0, 0.1, 0.0);
-            }else if(current.ry()<point.ry()){
-                camPos -= glm::vec3(0.0, 0.1, 0.0);
-            }
-        }
-    }else if(leftMouseButton && invert){
-        if(deltaX>deltaY){
-            if(current.rx()<point.rx()){
-                yaw += glm::pi<double>() / 30.0;
-            }else if(current.rx()>point.rx()){
-                yaw -= glm::pi<double>() / 30.0;
-            }
-        }
-        updateLookAt();
-    }else if(rightMouseButton && invert){
-        if(deltaX<=deltaY){
-            if(current.ry()>point.ry()){
-                pitch += glm::pi<double>() / 30.0;
-            }else if(current.ry()<point.ry()){
-                pitch -= glm::pi<double>() / 30.0;
-            }
-        }
-        updateLookAt();
-    }
-    */
-
-    current = point;//QPoint(width()/2, height()/2);
-
 
     update();
 }
