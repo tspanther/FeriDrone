@@ -2,6 +2,7 @@
 #define DRONE_H
 
 #include <objekt.h>
+#include <camera.h>
 
 class drone : Object
 {
@@ -9,6 +10,10 @@ public:
     drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow);
     ~drone();
     void draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program);
+    void moveTo(glm::vec3 vec);
+    void tiltTo(double roll, double pitch, double yaw);
+    // 1stP camera
+    Camera cam;
 private:
     glm::vec3 prevLocation;
 

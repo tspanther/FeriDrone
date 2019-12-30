@@ -15,16 +15,15 @@ public:
 
     ~Object();
 
-    float objx0;
-    float objy0;
-    float objz0;
+    glm::vec3 pos;
     double pitch;
     double yaw;
     double roll;
-    double scale;
 
     glm::vec3 offset;
     double rollo, pitcho, yawo;
+
+    double scale;
 
 protected:
     void loadTexture(const char* texFile, GLuint* texture_id);

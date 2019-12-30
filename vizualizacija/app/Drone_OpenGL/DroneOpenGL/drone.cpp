@@ -1,6 +1,9 @@
 #include "drone.h"
 
 drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow) : Object(gl_in, objFile, texFile) {
+    lookAt = glm::vec3(0.0, 0.0, -1.0);
+    upVec = glm::vec3(0.0, 1.0, 0.0);
+/*
     Object::loadObj(objFileArrow, &data_ArrLA);
     Object::loadObj(objFileArrow, &data_ArrUV);
     Object::loadObj(objFileArrow, &data_ArrVEL);
@@ -25,14 +28,40 @@ drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* 
     gl->glGenBuffers(1, &VBO_ArrVEL);
     gl->glBindBuffer(GL_ARRAY_BUFFER, VBO_ArrVEL);
     gl->glBufferData(GL_ARRAY_BUFFER, data_ArrVEL.size() * sizeof(float), data_ArrVEL.data(), GL_STATIC_DRAW);
+*/
+}
+
+drone::~drone(){}
+
+void drone::moveTo(glm::vec3 vec){
+    pos=vec;
+
+    cam.camPos = pos - 3.0f * lookAt;
+    cam.lookAt = glm::normalize(pos);
+}
+
+void drone::tiltTo(double roll_, double pitch_, double yaw_){
+    roll = roll_; pitch = pitch_; yaw = yaw_;
+
+    // update lookAt and upVec
+    upVec = glm::vec3(glm::cos(roll), glm::sin(roll), 0.0);
+    glm::vec3 front;
+    front.x = cos(yaw) * cos(pitch);
+    front.y = sin(pitch);
+    front.z = sin(yaw) * cos(pitch);
+    lookAt = glm::normalize(front);
+
+    cam.camPos = pos - 3.0f * lookAt;
+    cam.camUp = upVec;
 }
 
 void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     Object::draw(P, V, id_shader_program);
 
+    /*
     // lookAt Arrow
     glm::mat4 M = glm::mat4(1);
-    M = glm::translate(M, glm::vec3(objx0, objy0, objz0)); // object move
+    M = glm::translate(M, pos + offset); // object move
     M = glm::rotate_slow(M, (float)yaw, glm::vec3(1, 0, 0)); // object rotate
     M = glm::rotate_slow(M, (float)pitch, glm::vec3(0, 1, 0));
     M = glm::rotate_slow(M, (float)roll, glm::vec3(0, 0, 1));
@@ -48,7 +77,7 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
 
     // upVec Arrow
     M = glm::mat4(1);
-    M = glm::translate(M, glm::vec3(objx0, objy0, objz0)); // object move
+    M = glm::translate(M, pos + offset); // object move
     M = glm::rotate_slow(M, 90.0f, glm::vec3(0, 1, 0)); // object rotate
     M = glm::rotate_slow(M, (float)yaw, glm::vec3(0, 0, 1));
     M = glm::rotate_slow(M, (float)pitch, glm::vec3(0, 1, 0));
@@ -66,4 +95,5 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     /*
      * todo: poracunat vektor hitrosti, ga izrisat
     */
+
 }

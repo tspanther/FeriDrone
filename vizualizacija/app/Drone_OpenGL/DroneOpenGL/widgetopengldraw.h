@@ -7,6 +7,7 @@
 #include <objekt.h>
 #include <camera.h>
 #include <vector>
+#include <drone.h>
 
 class QOpenGLFunctions_3_3_Core;
 class WidgetOpenGLDraw : public QOpenGLWidget{
@@ -27,10 +28,11 @@ private:
 
     // objects
     std::vector<Object*> objekti;
+    drone* dron;
 
     // cam
     Camera thirdP;
-    Camera firstP;
+    Camera* firstP;
     Camera* activeCam;
 
     // premikanje objektov ---- debug

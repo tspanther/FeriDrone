@@ -28,6 +28,7 @@ WidgetOpenGLDraw::~WidgetOpenGLDraw() {
     for (unsigned i = 0; i < objekti.size(); i++){
         delete objekti[i];
     }
+    delete dron;
     gl->glDeleteProgram(id_shader_program);
 }
 
@@ -104,6 +105,7 @@ void WidgetOpenGLDraw::initializeGL() {
     gl->glEnable(GL_DEPTH_TEST);
     //glDisable(GL_CULL_FACE);
 
+    /*
     std::vector<const char*> objFiles = { "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/Low-Poly_Models.obj" };
     std::vector<const char*> texFiles = { "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/plain_grey.jpg" };
 
@@ -115,6 +117,11 @@ void WidgetOpenGLDraw::initializeGL() {
     objekti[0]->offset = glm::vec3(-0.1, -0.06, 0.52);
     objekti[0]->pitcho = 4.84;
     objekti[1]->offset = glm::vec3(0, -0.4, 0);
+    */
+
+    objekti.push_back(new Object(gl, "../DroneOpenGL/models/Low-Poly_Models.obj", "../DroneOpenGL/models/plain_grey.jpg"));
+    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "", "");
+    firstP = &dron->cam;
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {
@@ -149,6 +156,7 @@ void WidgetOpenGLDraw::paintGL() {
     for (unsigned int i = 0; i < objekti.size(); i++){
         objekti[i]->draw(P, V, id_shader_program);
     }
+    dron->draw(P, V, id_shader_program);
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {
@@ -167,22 +175,23 @@ void WidgetOpenGLDraw::stepAnimation(){
     pitch = animation[animationIdx * 6 + 4];
     yaw = animation[animationIdx * 6 + 5];
 
-    firstP.pitch = 0.0 ;//+ pitch;
-    firstP.yaw = -glm::pi<double>() / 2 ;// + yaw;
-    firstP.roll = glm::pi<double>() / 2 ;//+ roll;
-    firstP.camPos.x = pos_x;
-    firstP.camPos.y = pos_y;
-    firstP.camPos.z = pos_z + 3; // za dronom malo
+    dron->moveTo(glm::vec3(pos_x, pos_y, pos_z));
+    dron->tiltTo(roll, pitch, yaw);
 
-    firstP.updateLookAt();
-    firstP.updateUpVec();
+    /*
+    firstP->pitch = 0.0 ;//+ pitch;
+    firstP->yaw = -glm::pi<double>() / 2 ;// + yaw;
+    firstP->roll = glm::pi<double>() / 2 ;//+ roll;
+    firstP->camPos = glm::vec3(pos_x, pos_y, pos_z + 3);
 
-    objekti[0]->objx0 = pos_x;
-    objekti[0]->objy0 = pos_y;
-    objekti[0]->objz0 = pos_z;
+    firstP->updateLookAt();
+    firstP->updateUpVec();
+
+    objekti[0]->pos = glm::vec3(pos_x, pos_y, pos_z);
     objekti[0]->roll = roll;
     objekti[0]->pitch = pitch;
     objekti[0]->yaw = yaw;
+    */
 
     paintGL();
     animationIdx+=step;
@@ -336,7 +345,7 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             break;
         case Qt::Key::Key_Tab:
             if (activeCam == &thirdP) {
-                activeCam = &firstP;
+                activeCam = firstP;
             } else {
                 activeCam = &thirdP;
             }

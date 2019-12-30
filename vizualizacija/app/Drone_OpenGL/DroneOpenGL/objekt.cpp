@@ -13,9 +13,7 @@
 Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile) {
     gl = gl_in;
 
-    objx0 = 0;
-    objy0 = 0;
-    objz0 = 0;
+    pos = glm::vec3(0.0f, 0.0f, 0.0f);
     roll = 0;
     pitch = 0;
     yaw = 0;
@@ -59,12 +57,13 @@ Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char
     gl->glEnableVertexAttribArray(2);
 }
 
+
 void Object::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     glm::mat4 M = glm::mat4(1);
-    M = glm::translate(M, glm::vec3(objx0, objy0, objz0) + offset); // object move
-    M = glm::rotate_slow(M, (float)(yaw + yawo) , glm::vec3(1, 0, 0)); // object rotate
-    M = glm::rotate_slow(M, (float)(pitch + pitcho), glm::vec3(0, 1, 0));
-    M = glm::rotate_slow(M, (float)(roll + rollo), glm::vec3(0, 0, 1));
+    M = glm::translate(M, pos + offset); // object move
+    M = glm::rotate_slow(M, float(yaw + yawo), glm::vec3(1, 0, 0)); // object rotate
+    M = glm::rotate_slow(M, float(pitch + pitcho), glm::vec3(0, 1, 0));
+    M = glm::rotate_slow(M, float(roll + rollo), glm::vec3(0, 0, 1));
     M = glm::scale_slow(M, glm::vec3(scale, scale, scale));
     glm::mat4 PVM = P * V * M;
 
