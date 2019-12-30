@@ -61,10 +61,10 @@ Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char
 void Object::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     glm::mat4 M = glm::mat4(1);
     M = glm::translate(M, pos + offset); // object move
-    M = glm::rotate_slow(M, float(yaw + yawo), glm::vec3(1, 0, 0)); // object rotate
-    M = glm::rotate_slow(M, float(pitch + pitcho), glm::vec3(0, 1, 0));
-    M = glm::rotate_slow(M, float(roll + rollo), glm::vec3(0, 0, 1));
-    M = glm::scale_slow(M, glm::vec3(scale, scale, scale));
+    M = glm::rotate(M, float(yaw + yawo), glm::vec3(1, 0, 0)); // object rotate
+    M = glm::rotate(M, float(pitch + pitcho), glm::vec3(0, 1, 0));
+    M = glm::rotate(M, float(roll + rollo), glm::vec3(0, 0, 1));
+    M = glm::scale(M, glm::vec3(scale, scale, scale));
     glm::mat4 PVM = P * V * M;
 
     gl->glBindVertexArray(VAO);

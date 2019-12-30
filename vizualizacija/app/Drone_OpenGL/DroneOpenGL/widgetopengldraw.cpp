@@ -17,9 +17,6 @@ WidgetOpenGLDraw::WidgetOpenGLDraw(QWidget *parent) : QOpenGLWidget(parent) {
     QWidget::setFocusPolicy(Qt::StrongFocus);
     activeCam = &thirdP;
     setMouseTracking(true);
-    // Wrong width & height;
-    //current = QPoint(QWidget::width()/2, QWidget::height()/2);
-    // ShowCursor(false);
     /* Cursor se v tem primeru skrije samo znotraj predvidenega območja izrisa */
     // QWidget::setCursor(Qt::BlankCursor);
 }
@@ -112,16 +109,17 @@ void WidgetOpenGLDraw::initializeGL() {
     for (unsigned int i = 0; i < objFiles.size(); i++){
         objekti.push_back(new Object(gl, objFiles[i], texFiles[i]));
     }
-
-    // debug --- empiricni offseti za objekte
-    objekti[0]->offset = glm::vec3(-0.1, -0.06, 0.52);
-    objekti[0]->pitcho = 4.84;
-    objekti[1]->offset = glm::vec3(0, -0.4, 0);
     */
 
     objekti.push_back(new Object(gl, "../DroneOpenGL/models/Low-Poly_Models.obj", "../DroneOpenGL/models/plain_grey.jpg"));
-    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "", "");
+
+    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/arr.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.jpg");
     firstP = &dron->cam;
+
+    // debug --- empiricni offseti za objekte
+    objekti[0]->offset = glm::vec3(0, -0.4, 0);
+    dron->offset = glm::vec3(-0.1, 1.06, 0.52);
+    dron->pitcho = 4.84;
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {
