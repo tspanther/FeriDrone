@@ -10,7 +10,7 @@
 #include <QImage>
 #include "Source/OBJ_Loader.h"
 
-Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile) {
+Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, lepjenjeTeksture lt, smerLepljenja sl) {
     gl = gl_in;
 
     pos = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -25,7 +25,7 @@ Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char
 
     scale = 1.0;
 
-    loadObj(objFile, &data);
+    loadObj(objFile, &data, lt, sl);
     loadTexture(texFile, &tex_id);
 
 /*
@@ -95,7 +95,7 @@ void Object::loadTexture(const char* texFile, GLuint* texture_id){
     gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-void Object::loadObj(const char* objFile, std::vector<float>* datav){
+void Object::loadObj(const char* objFile, std::vector<float>* datav, lepjenjeTeksture lt, smerLepljenja sl){
     // Load OBJ file with OBJ_Loader library.
     objl::Loader loader;
     bool out = loader.LoadFile(objFile);
@@ -108,12 +108,61 @@ void Object::loadObj(const char* objFile, std::vector<float>* datav){
 
         // Go through each vertex and print its number,
         //  position, normal, and texture coordinate
+        glm::vec3 min = glm::vec3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+        glm::vec3 max = glm::vec3(std::numeric_limits<float>::min(), std::numeric_limits<float>::min(), std::numeric_limits<float>::min());
+
+        for (unsigned int j = 0; j < curMesh.Vertices.size(); j++)
+        {
+            if (curMesh.Vertices[j].Position.X < min.x){
+                min.x = curMesh.Vertices[j].Position.X;
+            }
+            if (curMesh.Vertices[j].Position.X > max.x){
+                max.x = curMesh.Vertices[j].Position.X;
+            }
+            if (curMesh.Vertices[j].Position.Y < min.y){
+                min.y = curMesh.Vertices[j].Position.Y;
+            }
+            if (curMesh.Vertices[j].Position.Y > max.y){
+                max.y = curMesh.Vertices[j].Position.Y;
+            }
+            if (curMesh.Vertices[j].Position.Z < min.z){
+                min.z = curMesh.Vertices[j].Position.Z;
+            }
+            if (curMesh.Vertices[j].Position.Z > max.z){
+                max.z = curMesh.Vertices[j].Position.Z;
+            }
+        }
+
+        glm::vec3 d = glm::vec3(max.x - min.x, max.y - min.y, max.z - min.z);
+
         for (unsigned int j = 0; j < curMesh.Vertices.size(); j++)
         {
             datav->push_back(curMesh.Vertices[j].Position.X);          datav->push_back(curMesh.Vertices[j].Position.Y);          datav->push_back(curMesh.Vertices[j].Position.Z);
             datav->push_back(curMesh.Vertices[j].Normal.X);            datav->push_back(curMesh.Vertices[j].Normal.Y);            datav->push_back(curMesh.Vertices[j].Normal.Z);
-            datav->push_back(curMesh.Vertices[j].TextureCoordinate.X); datav->push_back(curMesh.Vertices[j].TextureCoordinate.Y);
+
+            if (lt == lepjenjeTeksture::izDatoteke){
+                datav->push_back(curMesh.Vertices[j].TextureCoordinate.X); datav->push_back(curMesh.Vertices[j].TextureCoordinate.Y);
+            } else if(lt == lepjenjeTeksture::ravninsko){
+                float s, t;
+                glm::vec3 p = glm::vec3(curMesh.Vertices[j].Position.X, curMesh.Vertices[j].Position.Y, curMesh.Vertices[j].Position.Z);
+
+                if (sl == smerLepljenja::x){
+                    s = (p.z - min.z) / d.z;
+                    t = (p.y - min.y) / d.y;
+                } else if (sl == smerLepljenja::y){
+                    s = (p.x - min.x) / d.x;
+                    t = (p.z - min.z) / d.z;
+                } else if (sl == smerLepljenja::z){
+                    s = (p.x - min.x) / d.x;
+                    t = (p.y - min.y) / d.y;
+                }
+
+                datav->push_back(s); datav->push_back(t);
+            } else if (lt == lepjenjeTeksture::cilindricno){
+
+            } else if (lt == lepjenjeTeksture::sfericno){
+
+            }
         }
     }
-
 }

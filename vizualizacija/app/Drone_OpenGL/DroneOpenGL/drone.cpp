@@ -2,6 +2,7 @@
 
 unsigned int drone::prevLocWindowSize = 5;
 
+/*
 drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow_1, const char* texFileArrow_2, const char* texFileArrow_3) : Object(gl_in, objFile, texFile) {
     lookAt = glm::vec3(0.0, 0.0, -1.0);
     upVec = glm::vec3(0.0, 1.0, 0.0);
@@ -53,6 +54,7 @@ drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* 
     gl->glEnableVertexAttribArray(2);
 
 }
+*/
 
 drone::~drone(){
     gl->glDeleteVertexArrays(1, &VAO);

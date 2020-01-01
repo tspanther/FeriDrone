@@ -111,6 +111,33 @@ void WidgetOpenGLDraw::initializeGL() {
     }
     */
 
+    std::vector<const char*> texFiles = { "../DroneOpenGL/models/merc.jpg", "../DroneOpenGL/models/equirect.jpg" };
+    std::vector<glm::vec3> offsets = {   glm::vec3(0.0f, 0.0f, 0.0f),
+                                         glm::vec3(0.0f, 3.0f, 0.0f),
+                                         glm::vec3(3.0f, 0.0f, 0.0f),
+                                         glm::vec3(3.0f, 3.0f, 0.0f),
+                                         glm::vec3(6.0f, 0.0f, 0.0f),
+                                         glm::vec3(6.0f, 3.0f, 0.0f),
+                                         glm::vec3(9.0f, 0.0f, 0.0f),
+                                         glm::vec3(9.0f, 3.0f, 0.0f),
+                                         glm::vec3(12.0f, 0.0f, 0.0f),
+                                         glm::vec3(12.0f, 3.0f, 0.0f),
+                                         glm::vec3(15.0f, 0.0f, 0.0f),
+                                         glm::vec3(15.0f, 3.0f, 0.0f)    };
+    unsigned int idx = 0;
+
+    for (int lt = lepjenjeTeksture::izDatoteke; lt < lepjenjeTeksture::stoplt; lt++){
+        for (int sl = smerLepljenja::x; sl < smerLepljenja::stopsl; sl++){
+            for (unsigned int i = 0; i < 2; i++) {
+                objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", texFiles[i], static_cast<lepjenjeTeksture>(lt), static_cast<smerLepljenja>(sl)));
+                objekti[idx]->offset = offsets[idx];
+                idx++;
+            }
+        }
+    }
+
+
+    /*
     objekti.push_back(new Object(gl, "../DroneOpenGL/models/Low-Poly_Models.obj", "../DroneOpenGL/models/plain_grey.jpg"));
 
     dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/arr.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.jpg");
@@ -120,6 +147,7 @@ void WidgetOpenGLDraw::initializeGL() {
     objekti[0]->offset = glm::vec3(0, -0.4, 0);
     dron->offset = glm::vec3(-0.1, 1.06, 0.52);
     dron->pitcho = 4.84;
+    */
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {
@@ -154,7 +182,7 @@ void WidgetOpenGLDraw::paintGL() {
     for (unsigned int i = 0; i < objekti.size(); i++){
         objekti[i]->draw(P, V, id_shader_program);
     }
-    dron->draw(P, V, id_shader_program);
+    //dron->draw(P, V, id_shader_program);
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {
@@ -342,17 +370,19 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             thirdP.setDefaults();
             break;
         case Qt::Key::Key_Tab:
+        /*
             if (activeCam == &thirdP) {
                 activeCam = firstP;
             } else {
                 activeCam = &thirdP;
             }
+            */
             break;
         case Qt::Key::Key_2:
-            loadAnimation();
+            //loadAnimation();
             break;
         case Qt::Key::Key_3:
-            stepAnimation();
+            //stepAnimation();
             break;
         case Qt::Key::Key_4:
             objekti[currObj]->rollo+=speed*sign;
@@ -374,7 +404,7 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             break;
         case Qt::Key::Key_BracketRight:
             currObj++;
-            currObj%=2;
+            currObj%=objekti.size();
             break;
         case Qt::Key::Key_BracketLeft:
             sign*=(-1);
@@ -386,7 +416,6 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
     }
     update();
 }
-
 
 void WidgetOpenGLDraw::wheelEvent(QWheelEvent *event){
     makeCurrent();
