@@ -7,7 +7,7 @@
 #include <vector>
 
 enum lepjenjeTeksture{
-    izDatoteke, ravninsko, stoplt, cilindricno, sfericno
+    izDatoteke, ravninsko, cilindricno, sfericno, stoplt
 };
 
 enum smerLepljenja{

@@ -95,6 +95,10 @@ void Object::loadTexture(const char* texFile, GLuint* texture_id){
     gl->glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
+float vlen(glm::vec3 vec){
+    return sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+}
+
 void Object::loadObj(const char* objFile, std::vector<float>* datav, lepjenjeTeksture lt, smerLepljenja sl){
     // Load OBJ file with OBJ_Loader library.
     objl::Loader loader;
@@ -140,12 +144,13 @@ void Object::loadObj(const char* objFile, std::vector<float>* datav, lepjenjeTek
             datav->push_back(curMesh.Vertices[j].Position.X);          datav->push_back(curMesh.Vertices[j].Position.Y);          datav->push_back(curMesh.Vertices[j].Position.Z);
             datav->push_back(curMesh.Vertices[j].Normal.X);            datav->push_back(curMesh.Vertices[j].Normal.Y);            datav->push_back(curMesh.Vertices[j].Normal.Z);
 
-            if (lt == lepjenjeTeksture::izDatoteke){
-                datav->push_back(curMesh.Vertices[j].TextureCoordinate.X); datav->push_back(curMesh.Vertices[j].TextureCoordinate.Y);
-            } else if(lt == lepjenjeTeksture::ravninsko){
-                float s, t;
-                glm::vec3 p = glm::vec3(curMesh.Vertices[j].Position.X, curMesh.Vertices[j].Position.Y, curMesh.Vertices[j].Position.Z);
+            float s, t;
+            glm::vec3 p = glm::vec3(curMesh.Vertices[j].Position.X, curMesh.Vertices[j].Position.Y, curMesh.Vertices[j].Position.Z);
 
+            if (lt == lepjenjeTeksture::izDatoteke){
+                s = curMesh.Vertices[j].TextureCoordinate.X;
+                t = curMesh.Vertices[j].TextureCoordinate.Y;
+            } else if(lt == lepjenjeTeksture::ravninsko){
                 if (sl == smerLepljenja::x){
                     s = (p.z - min.z) / d.z;
                     t = (p.y - min.y) / d.y;
@@ -156,13 +161,44 @@ void Object::loadObj(const char* objFile, std::vector<float>* datav, lepjenjeTek
                     s = (p.x - min.x) / d.x;
                     t = (p.y - min.y) / d.y;
                 }
-
-                datav->push_back(s); datav->push_back(t);
             } else if (lt == lepjenjeTeksture::cilindricno){
+                glm::vec3 c = min + 0.5f * d;
+                glm::vec3 v = p - c;
+                float theta;
 
+                if (sl == smerLepljenja::x){
+                    theta = atan2(v.z, v.y)  * 180.0f / glm::pi<float>() + 180.0f;
+                    t = v.x / d.x + 0.5f;
+                } else if (sl == smerLepljenja::y){
+                    theta = atan2(v.x, v.z)  * 180.0f / glm::pi<float>() + 180.0f;
+                    t = v.y / d.y + 0.5f;
+                } else if (sl == smerLepljenja::z){
+                    theta = atan2(v.x, v.y)  * 180.0f / glm::pi<float>() + 180.0f;
+                    t = v.z / d.z + 0.5f;
+                }
+
+                s = theta / 360.0f;
             } else if (lt == lepjenjeTeksture::sfericno){
+                glm::vec3 c = min + 0.5f * d;
+                glm::vec3 v = p - c;
+                float theta, rho;
 
+                if (sl == smerLepljenja::x){
+                    theta = atan2(v.z, v.y) * 180.0f / glm::pi<float>() + 180.0f;
+                    rho = asin(v.x / vlen(v)) * 180.0f / glm::pi<float>();
+                } else if (sl == smerLepljenja::y){
+                    theta = atan2(v.x, v.z) * 180.0f / glm::pi<float>() + 180.0f;
+                    rho = asin(v.y / vlen(v)) * 180.0f / glm::pi<float>();
+                } else if (sl == smerLepljenja::z){
+                    theta = atan2(v.x, v.y) * 180.0f / glm::pi<float>() + 180.0f;
+                    rho = asin(v.z / vlen(v)) * 180.0f / glm::pi<float>();
+                }
+
+                s = theta / 360.0f;
+                t = rho / 180.0f + 0.5f;
             }
+
+            datav->push_back(s); datav->push_back(t);
         }
     }
 }
