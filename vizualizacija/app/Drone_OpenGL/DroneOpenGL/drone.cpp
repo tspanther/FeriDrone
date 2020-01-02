@@ -105,24 +105,21 @@ void drone::moveTo(glm::vec3 vec, unsigned int step){
     }
 
     pos = vec;
-    cam.camPos = pos + offset + 3.0f * glm::vec3(0.0f, 0.0f, 1.0f);// * lookAt;
-    //cam.lookAt = lookAt;//glm::normalize(pos);
+
+    cam.camPos = pos + glm::vec3(0.0f, 0.0f, 3.0f);
+    /*
+    cam.camPos = pos - 4.0f * lookAt;
+    cam.lookAt = lookAt;
+    cam.camUp = upVec;
+    */
 }
 
 void drone::tiltTo(double roll_, double pitch_, double yaw_){
     roll = roll_; pitch = pitch_; yaw = yaw_;
+}
 
-    // update lookAt and upVec
-    upVec = glm::vec3(glm::cos(roll), glm::sin(roll), 0.0);
-    glm::vec3 front;
-    front.x = cos(yaw) * cos(pitch);
-    front.y = sin(pitch);
-    front.z = sin(yaw) * cos(pitch);
-    lookAt = glm::normalize(front);
-
-    //cam.camPos = pos + 3.0f * glm::vec3(0.0f, 0.0f, 1.0f);// * lookAt;
-    //cam.lookAt = lookAt;
-    //cam.camUp = upVec;
+void drone::clearTraj(void){
+    data_traj.clear();
 }
 
 void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
@@ -147,6 +144,13 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     M = glm::scale(M, arrScale * glm::vec3(scale, scale, scale));
     glm::mat4 PVM = P * V * M;
 
+    /*
+    auto M_cam = glm::mat4(1);
+    M_cam = glm::rotate(M, float(yaw), glm::vec3(0, 1, 0));
+    M_cam = glm::rotate(M, float(pitch), glm::vec3(0, 0, 1));
+    //M_cam = glm::rotate(M, float(roll), glm::vec3(0, 0, 1));
+    lookAt = -1.0f * glm::normalize(M_cam * glm::vec4(0.0f, 0.0f, -1.0f, 1.0f));
+*/
     gl->glBindVertexArray(VAO_ArrLA);
     gl->glBindTexture(GL_TEXTURE_2D, tex_id_ArrLA);
     gl->glBindBuffer(GL_ARRAY_BUFFER, VBO_ArrLA);
@@ -163,6 +167,13 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     M = glm::scale(M, arrScale * glm::vec3(scale, scale, scale));
     PVM = P * V * M;
 
+    /*
+    M_cam = glm::mat4(1);
+    //M_cam = glm::rotate(M, float(-yaw), glm::vec3(1, 0, 0));
+    //M_cam = glm::rotate(M, float(-pitch), glm::vec3(0, 1, 0));
+    M_cam = glm::rotate(M, float(-roll), glm::vec3(0, 0, 1));
+    upVec = glm::normalize(M_cam * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+*/
     gl->glBindVertexArray(VAO_ArrUV);
     gl->glBindTexture(GL_TEXTURE_2D, tex_id_ArrUV);
     gl->glBindBuffer(GL_ARRAY_BUFFER, VBO_ArrUV);
@@ -182,9 +193,9 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
 
     M = glm::mat4(1);
     M = glm::translate(M, pos + offset); // object move
-    M = glm::rotate(M, v_yaw + float(glm::pi<double>()) /* * float(glm::pi<double>()) + float(glm::pi<double>() / 2) */, glm::vec3(0, 1, 0)); // object rotate
-    M = glm::rotate(M, v_pitch + float(glm::pi<double>() / 2) /* * float(glm::pi<double>()) + float(glm::pi<double>() / 2) */, glm::vec3(0, 0, 1));
-    M = glm::scale(M, /*length * 20.0f **/ arrScale * glm::vec3(scale, scale, scale));
+    M = glm::rotate(M, v_yaw + float(glm::pi<double>()), glm::vec3(0, 1, 0)); // object rotate
+    M = glm::rotate(M, v_pitch + float(glm::pi<double>() / 2), glm::vec3(0, 0, 1));
+    M = glm::scale(M, length * 5.0f * arrScale * glm::vec3(scale, scale, scale));
     PVM = P * V * M;
 
     gl->glBindVertexArray(VAO_ArrVEL);

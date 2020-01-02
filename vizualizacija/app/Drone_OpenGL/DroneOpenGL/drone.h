@@ -13,6 +13,7 @@ public:
     void draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program);
     void moveTo(glm::vec3 vec, unsigned int step);
     void tiltTo(double roll, double pitch, double yaw);
+    void clearTraj(void);
     // 1stP camera
     Camera cam;
 private:

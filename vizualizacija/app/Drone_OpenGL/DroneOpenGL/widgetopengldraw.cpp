@@ -113,7 +113,7 @@ void WidgetOpenGLDraw::initializeGL() {
 
     objekti.push_back(new Object(gl, "../DroneOpenGL/models/scena.obj", "../DroneOpenGL/models/plain_grey.jpg"));
 
-    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/camo.jpg", "../DroneOpenGL/models/arrow.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.png", "../DroneOpenGL/models/color.jpg");
+    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/arrow.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.png", "../DroneOpenGL/models/color.jpg");
     firstP = &dron->cam;
 
     // debug --- empiricni offseti za objekte
@@ -340,6 +340,7 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             break;
         case Qt::Key::Key_1:
             thirdP.setDefaults();
+            dron->clearTraj();
             break;
         case Qt::Key::Key_Tab:
             if (activeCam == &thirdP) {
