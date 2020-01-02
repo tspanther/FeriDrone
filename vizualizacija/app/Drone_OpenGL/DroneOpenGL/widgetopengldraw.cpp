@@ -113,6 +113,7 @@ void WidgetOpenGLDraw::initializeGL() {
 
     //std::vector<const char*> texFiles = { "../DroneOpenGL/models/merc.jpg", "../DroneOpenGL/models/equirect.jpg" };
 
+    /*
     unsigned int idx = 0;
 
     for (int lt = lepjenjeTeksture::izDatoteke; lt < lepjenjeTeksture::stoplt; lt++){
@@ -137,6 +138,11 @@ void WidgetOpenGLDraw::initializeGL() {
     objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/equirect.jpg", lepjenjeTeksture::sfericno, smerLepljenja::y));
     objekti[idx]->offset = glm::vec3(3.0f, 10.0f, 0.0f);
     idx++;
+    */
+
+    objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/plain_red.jpg", lepjenjeTeksture::izDatoteke, smerLepljenja::x));
+    objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/plain_red.jpg", lepjenjeTeksture::izDatoteke, smerLepljenja::x));
+    objekti[1]->offset = glm::vec3(3.0f, 0.0f, 0.0f);
 
     /*
     objekti.push_back(new Object(gl, "../DroneOpenGL/models/Low-Poly_Models.obj", "../DroneOpenGL/models/plain_grey.jpg"));

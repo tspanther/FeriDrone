@@ -33,6 +33,17 @@ public:
 
     double scale;
 
+    // material
+    glm::vec3 Ra = glm::vec3(1.0f, 1.0f, 1.0f);
+    glm::vec3 Rd = glm::vec3(0.8f, 0.8f, 0.8f);
+    glm::vec3 Rs = glm::vec3(0.5f, 0.5f, 0.5f);
+    GLint ns = 64;
+
+    // to ne sodi sem - to bi moral passat preko metode draw kot argument;; pa bi moral dosti spreminjat druge kode v tem primeru
+    glm::vec3 lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    glm::vec3 lightPos = glm::vec3(1.0f, 5.0f, 7.0f);
+    glm::vec3 camPos = glm::vec3(0.0f, 0.0f, 3.0f);
+
 protected:
     void loadTexture(const char* texFile, GLuint* texture_id);
     void loadObj(const char* objFile, std::vector<float>* datav, lepjenjeTeksture lt, smerLepljenja sl);

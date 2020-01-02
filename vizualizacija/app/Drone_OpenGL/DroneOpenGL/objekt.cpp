@@ -72,6 +72,15 @@ void Object::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     gl->glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "PVM"), 1, GL_FALSE, glm::value_ptr(PVM));
+    gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "M"), 1, GL_FALSE, glm::value_ptr(M));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "lightColor"), 1, glm::value_ptr(lightColor));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "lightPos"), 1, glm::value_ptr(lightPos));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "campPos"), 1, glm::value_ptr(camPos));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Ra"), 1, glm::value_ptr(Ra));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Rd"), 1, glm::value_ptr(Rd));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Rs"), 1, glm::value_ptr(Rs));
+    gl->glUniform1i(gl->glGetUniformLocation(id_shader_program, "ns"), ns);
+
     gl->glDrawArrays(GL_TRIANGLES, 0, data.size() * sizeof(float));
 }
 
