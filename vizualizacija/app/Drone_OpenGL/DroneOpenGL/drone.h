@@ -42,6 +42,7 @@ private:
     std::vector<float> data_ArrVEL;
 
     // trajectory
+    float alpha = 0.4;
     GLuint VBO_traj;
     GLuint VAO_traj;
     GLuint tex_id_traj;

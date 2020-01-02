@@ -83,66 +83,30 @@ drone::~drone(){
 }
 
 void drone::moveTo(glm::vec3 vec, unsigned int step){
-std::cout << "step" << step << std::endl;
-    glm::vec3 lastPosition;
-    glm::vec3 currentPosition;
-    //glm::vec3 lastPositionProjected;
-
-    if(prevLocations.empty()){
-        currentPosition = vec;
-        lastPosition = vec;
-        /*currentPositionProjected = vec;
-        currentPositionProjected.y = 0.0f;
-        lastPositionProjected = vec;
-        lastPositionProjected.y = 0.0f;*/
-    }else{
-        currentPosition = vec;
-        lastPosition = prevLocations.back();
-        /*currentPositionProjected = vec;
-        currentPositionProjected.y = 0.0f;
-        lastPositionProjected = prevLocations.back();
-        lastPositionProjected.y = 0.0f;*/
-    }
-
-    /*if(step == 2){
-        lastPosition = prevLocations.back();
-
-    }
-
-    if(step == 10){
-        currentPosition = vec;
-    }*/
-
     prevLocations.push(vec);
     if (prevLocations.size() > prevLocWindowSize){
         prevLocations.pop();
-    }
-
-    pos=vec;
-
-    cam.camPos = pos + offset + 3.0f * glm::vec3(0.0f, 0.0f, 1.0f);// * lookAt;
-    //cam.lookAt = lookAt;//glm::normalize(pos);
-
-    //if(step == 10){
-        std::cout << "cur.x" << currentPosition.x << "cur.y" << currentPosition.y << "cur.z" << currentPosition.z << std::endl;
-        std::cout << "prev.x" << lastPosition.x << "cur.y" << lastPosition.y << "cur.z" << lastPosition.z << std::endl;
 
         // Trajectory data.
+        if (step % prevLocWindowSize == 0){
+            glm::vec3 previousPosition = prevLocations.front();
+            glm::vec3 currentPosition = prevLocations.back();
             std::vector<float> a = {
-                lastPosition.x, lastPosition.y, lastPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-                currentPosition.x, currentPosition.y, currentPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-                lastPosition.x, 0.0, lastPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-                currentPosition.x, currentPosition.y, currentPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-                lastPosition.x, 0.0, lastPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-                 currentPosition.x, 0.0, currentPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0
+                previousPosition.x, previousPosition.y, previousPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
+                currentPosition.x, currentPosition.y, currentPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
+                previousPosition.x, 0.0, previousPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
+                currentPosition.x, currentPosition.y, currentPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
+                previousPosition.x, 0.0, previousPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
+                currentPosition.x, 0.0, currentPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha
             };
 
-            for (unsigned int i = 0; i< 9*6; i++){
-                data_traj.push_back(a[i]);
-            }
-    //}
+            data_traj.insert(data_traj.end(), a.begin(), a.end());
+        }
+    }
 
-
+    pos = vec;
+    cam.camPos = pos + offset + 3.0f * glm::vec3(0.0f, 0.0f, 1.0f);// * lookAt;
+    //cam.lookAt = lookAt;//glm::normalize(pos);
 }
 
 void drone::tiltTo(double roll_, double pitch_, double yaw_){
@@ -164,22 +128,12 @@ void drone::tiltTo(double roll_, double pitch_, double yaw_){
 void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     Object::draw(P, V, id_shader_program);
 
-    /*glm::mat4 M = glm::mat4(1);
-    M = glm::translate(M, pos); // object move
-    M = glm::rotate(M, float(yaw), glm::vec3(1, 0, 0)); // object rotate
-    M = glm::rotate(M, float(pitch), glm::vec3(0, 1, 0));
-    M = glm::rotate(M, float(roll), glm::vec3(0, 0, 1));
-    M = glm::scale(M, glm::vec3(scale, scale, scale));
-    glm::mat4 PVM = P * V * M;*/
-
-    // Draw trajectory.
-
+    // trajectory
     gl->glBindVertexArray(VAO_traj);
     gl->glBindTexture(GL_TEXTURE_2D, tex_id_traj);
     gl->glBindBuffer(GL_ARRAY_BUFFER, VBO_traj);
     gl->glBufferData(GL_ARRAY_BUFFER, data_traj.size() * sizeof(float), data_traj.data(), GL_STATIC_DRAW);
-
-    //gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "PVM"), 1, GL_FALSE, glm::value_ptr(PVM));
+    gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "PVM"), 1, GL_FALSE, glm::value_ptr(P * V));
     gl->glDrawArrays(GL_TRIANGLES, 0, data_traj.size() * sizeof(float));
 
 
@@ -222,14 +176,14 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     }
     glm::vec3 velocity = glm::normalize(prevLocations.back() - prevLocations.front());
     float v_pitch = asin(-velocity.y);
-    float v_yaw = atan2(velocity.x, velocity.z);
+    float v_yaw = -atan2(velocity.z, velocity.x);
     auto vel_unscaled = prevLocations.back() - prevLocations.front();
     float length = sqrt(vel_unscaled.x * vel_unscaled.x + vel_unscaled.y * vel_unscaled.y + vel_unscaled.z * vel_unscaled.z);
 
     M = glm::mat4(1);
     M = glm::translate(M, pos + offset); // object move
-    M = glm::rotate(M, v_yaw * float(glm::pi<double>()) + float(glm::pi<double>() / 2), glm::vec3(0, 1, 0)); // object rotate
-    M = glm::rotate(M, v_pitch * float(glm::pi<double>()) + float(glm::pi<double>() / 2), glm::vec3(0, 0, 1));
+    M = glm::rotate(M, v_yaw + float(glm::pi<double>()) /* * float(glm::pi<double>()) + float(glm::pi<double>() / 2) */, glm::vec3(0, 1, 0)); // object rotate
+    M = glm::rotate(M, v_pitch + float(glm::pi<double>() / 2) /* * float(glm::pi<double>()) + float(glm::pi<double>() / 2) */, glm::vec3(0, 0, 1));
     M = glm::scale(M, /*length * 20.0f **/ arrScale * glm::vec3(scale, scale, scale));
     PVM = P * V * M;
 

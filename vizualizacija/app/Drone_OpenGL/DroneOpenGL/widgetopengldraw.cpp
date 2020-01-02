@@ -111,15 +111,15 @@ void WidgetOpenGLDraw::initializeGL() {
     }
     */
 
-    objekti.push_back(new Object(gl, "../DroneOpenGL/models/Low-Poly_Models.obj", "../DroneOpenGL/models/plain_grey.jpg"));
+    objekti.push_back(new Object(gl, "../DroneOpenGL/models/scena.obj", "../DroneOpenGL/models/plain_grey.jpg"));
 
-    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/arr.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.jpg", "../DroneOpenGL/models/purple.jpg");
+    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/camo.jpg", "../DroneOpenGL/models/arrow.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.png", "../DroneOpenGL/models/color.jpg");
     firstP = &dron->cam;
 
     // debug --- empiricni offseti za objekte
-    objekti[0]->offset = glm::vec3(0, -0.4, 0);
-    dron->offset = glm::vec3(-0.1, 1.06, 0.52);
-    dron->pitcho = 4.84;
+    //objekti[0]->offset = glm::vec3(0, -0.4, 0);
+    //dron->offset = glm::vec3(-0.1, 1.06, 0.52);
+    //dron->pitcho = 4.84;
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {
