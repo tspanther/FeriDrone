@@ -113,7 +113,7 @@ void WidgetOpenGLDraw::initializeGL() {
 
     objekti.push_back(new Object(gl, "../DroneOpenGL/models/Low-Poly_Models.obj", "../DroneOpenGL/models/plain_grey.jpg"));
 
-    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/arr.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.jpg");
+    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/arr.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.jpg", "../DroneOpenGL/models/purple.jpg");
     firstP = &dron->cam;
 
     // debug --- empiricni offseti za objekte
@@ -173,7 +173,7 @@ void WidgetOpenGLDraw::stepAnimation(){
     pitch = animation[animationIdx * 6 + 4];
     yaw = animation[animationIdx * 6 + 5];
 
-    dron->moveTo(glm::vec3(pos_x, pos_y, pos_z));
+    dron->moveTo(glm::vec3(pos_x, pos_y, pos_z), (unsigned int)animationIdx);
     dron->tiltTo(roll, pitch, yaw);
 
     /*

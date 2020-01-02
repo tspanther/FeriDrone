@@ -8,10 +8,10 @@
 class drone : public Object
 {
 public:
-    drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow_1, const char* texFileArrow_2, const char* texFileArrow_3);
+    drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow_1, const char* texFileArrow_2, const char* texFileArrow_3, const char* texFileTrajectory);
     ~drone();
     void draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program);
-    void moveTo(glm::vec3 vec);
+    void moveTo(glm::vec3 vec, unsigned int step);
     void tiltTo(double roll, double pitch, double yaw);
     // 1stP camera
     Camera cam;
@@ -40,6 +40,12 @@ private:
     GLuint VAO_ArrVEL;
     GLuint tex_id_ArrVEL;
     std::vector<float> data_ArrVEL;
+
+    // trajectory
+    GLuint VBO_traj;
+    GLuint VAO_traj;
+    GLuint tex_id_traj;
+    std::vector<float> data_traj;
 };
 
 #endif // DRONE_H
