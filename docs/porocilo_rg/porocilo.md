@@ -78,15 +78,25 @@ camUp = todo(roll);
 
 Koda iz vaje 5...
 
+#### Sence
+
+https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
+
 ### Real-time branje podatkov iz toka, prikazovanje
 
 - Wifi vmesnik
 - filtriranje podatkov (low pass)
 
+### Trajektorija nagnjenosti - platojev
+
+'stripes 3d flight'
+
 ### Opcijsko: Igra
 
 - fizikalni model
-- dekodiranje PWM signala s controllerja (lani v Python-u implementirali, dokaj preprost port v C++)
+    - https://github.com/bulletphysics
+- dekodiranje PWM signala s controllerja
+    - IPC s Python skripto
 ...
 - dodatni ukazi zraven usmerjanja (streljanje, metanje bomb) - kodirani v preostalih kanalih
 
@@ -94,6 +104,10 @@ Koda iz vaje 5...
 
 Uporabniski vmesnik za izbiro nacina delovanja aplikacije (preprost)
 
+App modes:
 - Real-time renderiranje iz toka podatkov
 - animacija iz datoteke .flight (shranjen not podatkov z drona)
-- (Igra) 
+- (Igra)
+
+Drugo:
+- obkljukanje/odkljukanje atributov za prikaz
