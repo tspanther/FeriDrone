@@ -92,7 +92,7 @@ void drone::tiltTo(double roll_, double pitch_, double yaw_){
 }
 
 void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
-    Object::draw(P, V, id_shader_program);
+    //Object::draw(P, V, id_shader_program);
 
 
     // lookAt Arrow

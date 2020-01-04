@@ -8,6 +8,7 @@ TEMPLATE = app
 SOURCES += main.cpp\
         camera.cpp \
         drone.cpp \
+        light.cpp \
         mainwindow.cpp \
         objekt.cpp \
         widgetopengldraw.cpp
@@ -15,6 +16,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
         camera.h \
         drone.h \
+        light.h \
         objekt.h \
         widgetopengldraw.h
 

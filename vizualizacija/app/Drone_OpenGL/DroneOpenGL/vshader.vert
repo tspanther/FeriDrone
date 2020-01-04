@@ -5,16 +5,32 @@ layout(location=1) in vec3 normal;
 layout(location=2) in vec2 aTexCoord;
 
 out vec2 TexCoord;
-out vec4 normalVS;
-out vec3 posVS;
+out vec3 normalVS; // od modela (blender..)
+out vec3 posVS; // od modela (blender..)
+
+/*
+uniform mat4 P;
+uniform mat4 VM;
+uniform mat4 NormalMatrix;
+*/
 
 uniform mat4 PVM;
 uniform mat4 M;
+uniform mat4 NormalMatrix; // transpose(inverse(M))
 
 void main(){
+    /*
+    gl_Position = P * VM * vec4(in_Pos.xyz, 1.0);
+
+    TexCoord = aTexCoord;
+    normalVS = normalize(NormalMatrix * vec4(normal.xyz, 1.0)).xyz; 
+    posVS = (VM * vec4(in_Pos.xyz, 1.0)).xyz;
+    */
+
     gl_Position = PVM * vec4(in_Pos.xyz, 1.0);
 
     TexCoord = aTexCoord;
-    normalVS =  mat4(transpose(inverse(M))) * vec4(normal.xyz,1);
-    posVS = vec3(M * vec4(in_Pos.xyz, 1.0));
+    normalVS = normalize(NormalMatrix * vec4(normal.xyz, 1.0)).xyz; 
+    posVS = (M * vec4(in_Pos.xyz, 1.0)).xyz;
 }
+

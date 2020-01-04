@@ -113,36 +113,36 @@ void WidgetOpenGLDraw::initializeGL() {
 
     //std::vector<const char*> texFiles = { "../DroneOpenGL/models/merc.jpg", "../DroneOpenGL/models/equirect.jpg" };
 
-    /*
     unsigned int idx = 0;
 
     for (int lt = lepjenjeTeksture::izDatoteke; lt < lepjenjeTeksture::stoplt; lt++){
         for (int sl = smerLepljenja::x; sl < smerLepljenja::stopsl; sl++){
-            objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/cboard.jpg", static_cast<lepjenjeTeksture>(lt), static_cast<smerLepljenja>(sl)));
+            objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/cboard.jpg", static_cast<lepjenjeTeksture>(lt), static_cast<smerLepljenja>(sl), &light));
             objekti[idx]->offset = glm::vec3(3.0f * idx, 0.0f, 0.0f);
             idx++;
         }
     }
     for (int lt = lepjenjeTeksture::izDatoteke; lt < lepjenjeTeksture::stoplt; lt++){
         for (int sl = smerLepljenja::x; sl < smerLepljenja::stopsl; sl++){
-            objekti.push_back(new Object(gl, "../DroneOpenGL/models/roller.obj", "../DroneOpenGL/models/cboard.jpg", static_cast<lepjenjeTeksture>(lt), static_cast<smerLepljenja>(sl)));
+            objekti.push_back(new Object(gl, "../DroneOpenGL/models/roller.obj", "../DroneOpenGL/models/cboard.jpg", static_cast<lepjenjeTeksture>(lt), static_cast<smerLepljenja>(sl), &light));
             objekti[idx]->offset = glm::vec3(3.0f * idx - 12.0f * 3.0f, 5.0f, 0.0f);
             idx++;
         }
     }
 
-    objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/merc.jpg", lepjenjeTeksture::cilindricno, smerLepljenja::y));
+    objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/merc.jpg", lepjenjeTeksture::cilindricno, smerLepljenja::y, &light));
     objekti[idx]->offset = glm::vec3(0.0f, 10.0f, 0.0f);
     idx++;
 
-    objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/equirect.jpg", lepjenjeTeksture::sfericno, smerLepljenja::y));
+    objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/equirect.jpg", lepjenjeTeksture::sfericno, smerLepljenja::y, &light));
     objekti[idx]->offset = glm::vec3(3.0f, 10.0f, 0.0f);
     idx++;
-    */
 
-    objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/plain_red.jpg", lepjenjeTeksture::izDatoteke, smerLepljenja::x));
-    objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/plain_red.jpg", lepjenjeTeksture::izDatoteke, smerLepljenja::x));
-    objekti[1]->offset = glm::vec3(3.0f, 0.0f, 0.0f);
+    /*
+    objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/plain_red.jpg", lepjenjeTeksture::izDatoteke, smerLepljenja::x, &light));
+    objekti.push_back(new Object(gl, "../DroneOpenGL/models/ball.obj", "../DroneOpenGL/models/plain_red.jpg", lepjenjeTeksture::izDatoteke, smerLepljenja::x, &light));
+    objekti[1]->pos += glm::vec3(3.0f, 0.0f, 0.0f);
+    */
 
     /*
     objekti.push_back(new Object(gl, "../DroneOpenGL/models/Low-Poly_Models.obj", "../DroneOpenGL/models/plain_grey.jpg"));
@@ -186,8 +186,8 @@ void WidgetOpenGLDraw::paintGL() {
     auto camPosZoomed = activeCam->camPos + (float)activeCam->zoom * glm::normalize(activeCam->lookAt);
     glm::mat4 V = glm::lookAt(camPosZoomed, activeCam->lookAt + activeCam->camPos, activeCam->camUp);
 
-    for (unsigned int i = 0; i < objekti.size(); i++){
-        objekti[i]->draw(P, V, id_shader_program);
+    for (unsigned int i = 0; i < objekti.size(); i++) {
+        objekti[i]->draw(P, V, id_shader_program, activeCam->camPos);
     }
     //dron->draw(P, V, id_shader_program);
 
@@ -356,11 +356,10 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             roll += glm::pi<double>() / 30.0;
             updateUpVec();
             break;
-        case Qt::Key::Key_H:
-            roll -= glm::pi<double>() / 30.0;
+        case Qt::Key::Keyglm:pi<double>() / 30.0;
             updateUpVec();
             break;
-
+ */
         case Qt::Key::Key_W:
             thirdP.camPos += speed * glm::normalize(projLookAt);
             break;
@@ -374,41 +373,31 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             thirdP.camPos -= speed * glm::normalize(projLookAtFlip);
             break;
         case Qt::Key::Key_1:
-            thirdP.setDefaults();
-            break;
-            */
-        case Qt::Key::Key_Tab:
-        /*
-            if (activeCam == &thirdP) {
-                activeCam = firstP;
-            } else {
-                activeCam = &thirdP;
-            }
-            */
+            light.lpos.x += sign * speed * 15.0f;
             break;
         case Qt::Key::Key_2:
-            //loadAnimation();
+            light.lpos.y += sign * speed * 15.0f;
             break;
         case Qt::Key::Key_3:
-            //stepAnimation();
+            light.lpos.z += sign * speed * 15.0f;
             break;
         case Qt::Key::Key_4:
-            objekti[currObj]->rollo+=speed*sign;
+            objekti[currObj]->roll+=speed*sign;
             break;
         case Qt::Key::Key_5:
-            objekti[currObj]->pitcho+=speed*sign;
+            objekti[currObj]->pitch+=speed*sign;
             break;
         case Qt::Key::Key_6:
-            objekti[currObj]->yawo+=speed*sign;
+            objekti[currObj]->yaw+=speed*sign;
             break;
         case Qt::Key::Key_7:
-            objekti[currObj]->offset.x+=speed*sign;
+            objekti[currObj]->pos.x+=speed*sign;
             break;
         case Qt::Key::Key_8:
-            objekti[currObj]->offset.y+=speed*sign;
+            objekti[currObj]->pos.y+=speed*sign;
             break;
         case Qt::Key::Key_9:
-            objekti[currObj]->offset.z+=speed*sign;
+            objekti[currObj]->pos.z+=speed*sign;
             break;
         case Qt::Key::Key_Left:
             currObj--;

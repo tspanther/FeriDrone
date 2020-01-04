@@ -35,6 +35,9 @@ private:
     Camera* firstP;
     Camera* activeCam;
 
+    // light
+    Light light;
+
     // premikanje objektov ---- debug
     int currObj = 0;
     int sign = 1;
