@@ -12,8 +12,9 @@ public:
     ~drone();
     void draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program);
     void moveTo(glm::vec3 vec, unsigned int step);
-    void tiltTo(double roll, double pitch, double yaw);
+    void tiltTo(float roll, float pitch, float yaw);
     void clearTraj(void);
+
     // 1stP camera
     Camera cam;
 private:
@@ -43,7 +44,7 @@ private:
     std::vector<float> data_ArrVEL;
 
     // trajectory
-    float alpha = 0.4;
+    float alpha = 0.4f;
     GLuint VBO_traj;
     GLuint VAO_traj;
     GLuint tex_id_traj;

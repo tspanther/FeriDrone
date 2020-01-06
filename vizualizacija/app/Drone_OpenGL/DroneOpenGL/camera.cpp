@@ -6,9 +6,9 @@ Camera::Camera(){
     camPos = glm::vec3(0.0, 0.0, 3.0);
     lookAt = glm::vec3(0.0, 0.0, -1.0);
     camUp = glm::vec3(0.0, 1.0, 0.0);
-    pitch = 0.0;
-    yaw = -glm::pi<double>() / 2;
-    roll = glm::pi<double>() / 2;
+    pitch = 0.0f;
+    yaw = -glm::pi<float>() / 2;
+    roll = glm::pi<float>() / 2;
 }
 
 Camera::~Camera(){}
@@ -19,9 +19,9 @@ void Camera::updateUpVec(){
 
 void Camera::updateLookAt(){
     glm::vec3 front;
-    front.x = cos(yaw) * cos(pitch);
-    front.y = sin(pitch);
-    front.z = sin(yaw) * cos(pitch);
+    front.x = float(cos(yaw) * cos(pitch));
+    front.y = float(sin(pitch));
+    front.z = float(sin(yaw) * cos(pitch));
     lookAt = glm::normalize(front);
 }
 
@@ -32,7 +32,7 @@ void Camera::setDefaults(){
     lookAt = glm::vec3(0.0, 0.0, -1.0);
     camUp = glm::vec3(0.0, 1.0, 0.0);
     pitch = 0.0;
-    yaw = -glm::pi<double>() / 2;
-    roll = glm::pi<double>() / 2;
+    yaw = -glm::pi<float>() / 2;
+    roll = glm::pi<float>() / 2;
     lockToThirdPersonCamera = false;
 }

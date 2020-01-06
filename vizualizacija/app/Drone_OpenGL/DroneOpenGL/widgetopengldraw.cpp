@@ -17,8 +17,6 @@ WidgetOpenGLDraw::WidgetOpenGLDraw(QWidget *parent) : QOpenGLWidget(parent) {
     QWidget::setFocusPolicy(Qt::StrongFocus);
     activeCam = &thirdP;
     setMouseTracking(true);
-    /* Cursor se v tem primeru skrije samo znotraj predvidenega območja izrisa */
-    // QWidget::setCursor(Qt::BlankCursor);
 }
 
 WidgetOpenGLDraw::~WidgetOpenGLDraw() {
@@ -102,24 +100,10 @@ void WidgetOpenGLDraw::initializeGL() {
     gl->glEnable(GL_DEPTH_TEST);
     //glDisable(GL_CULL_FACE);
 
-    /*
-    std::vector<const char*> objFiles = { "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/Low-Poly_Models.obj" };
-    std::vector<const char*> texFiles = { "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/plain_grey.jpg" };
-
-    for (unsigned int i = 0; i < objFiles.size(); i++){
-        objekti.push_back(new Object(gl, objFiles[i], texFiles[i]));
-    }
-    */
-
     objekti.push_back(new Object(gl, "../DroneOpenGL/models/scena.obj", "../DroneOpenGL/models/plain_grey.jpg"));
 
     dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/arrow.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.png", "../DroneOpenGL/models/color.jpg");
     firstP = &dron->cam;
-
-    // debug --- empiricni offseti za objekte
-    //objekti[0]->offset = glm::vec3(0, -0.4, 0);
-    //dron->offset = glm::vec3(-0.1, 1.06, 0.52);
-    //dron->pitcho = 4.84;
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {
@@ -132,12 +116,7 @@ void WidgetOpenGLDraw::resizeGL(int w, int h) {
 }
 
 glm::mat4 WidgetOpenGLDraw::createProjectionMatrix() {
-    switch (projMode){
-        case 0:
-            return glm::perspective(glm::radians(60.0f), float(width()) / height(), 0.01f, 1000.0f);
-        case 1:
-            return glm::ortho(-5.0, 5.0, -5.0, 5.0, 0.01, 1000.0);
-    }
+    return glm::perspective(glm::radians(60.0f), float(width()) / height(), 0.01f, 1000.0f);
 }
 
 void WidgetOpenGLDraw::paintGL() {
@@ -148,7 +127,7 @@ void WidgetOpenGLDraw::paintGL() {
     gl->glUseProgram(id_shader_program);
 
     glm::mat4 P = createProjectionMatrix();
-    auto camPosZoomed = activeCam->camPos + (float)activeCam->zoom * glm::normalize(activeCam->lookAt);
+    auto camPosZoomed = activeCam->camPos + float(activeCam->zoom) * glm::normalize(activeCam->lookAt);
     glm::mat4 V = glm::lookAt(camPosZoomed, activeCam->lookAt + activeCam->camPos, activeCam->camUp);
 
     for (unsigned int i = 0; i < objekti.size(); i++){
@@ -163,7 +142,7 @@ void WidgetOpenGLDraw::paintGL() {
 }
 
 void WidgetOpenGLDraw::stepAnimation(){
-    int step = 1;
+    unsigned int step = 1;
     double pos_x, pos_y, pos_z, roll, pitch, yaw;
 
     pos_x = animation[animationIdx * 6 + 0];
@@ -173,34 +152,20 @@ void WidgetOpenGLDraw::stepAnimation(){
     pitch = animation[animationIdx * 6 + 4];
     yaw = animation[animationIdx * 6 + 5];
 
-    dron->moveTo(glm::vec3(pos_x, pos_y, pos_z), (unsigned int)animationIdx);
-    dron->tiltTo(roll, pitch, yaw);
-
-    /*
-    firstP->pitch = 0.0 ;//+ pitch;
-    firstP->yaw = -glm::pi<double>() / 2 ;// + yaw;
-    firstP->roll = glm::pi<double>() / 2 ;//+ roll;
-    firstP->camPos = glm::vec3(pos_x, pos_y, pos_z + 3);
-
-    firstP->updateLookAt();
-    firstP->updateUpVec();
-
-    objekti[0]->pos = glm::vec3(pos_x, pos_y, pos_z);
-    objekti[0]->roll = roll;
-    objekti[0]->pitch = pitch;
-    objekti[0]->yaw = yaw;
-    */
+    dron->moveTo(glm::vec3(pos_x, pos_y, pos_z), animationIdx);
+    dron->tiltTo(float(roll), float(pitch), float(yaw));
 
     paintGL();
-    animationIdx+=step;
-    animationIdx%=animation.size()/6;
+
+    animationIdx += step;
+    animationIdx %= animation.size() / 6;
 }
 
 void WidgetOpenGLDraw::loadAnimation(){
     std::ifstream f("../DroneOpenGL/flight.csv");
+
     int idx;
-    double roll, pitch, yaw;
-    float pos_x, pos_y, pos_z;
+    double roll, pitch, yaw, pos_x, pos_y, pos_z;
     animation.clear();
     while (f >> idx){
         f >> pos_x >> pos_y >> pos_z >> roll >> pitch >> yaw;
@@ -222,110 +187,6 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
     float speed = 0.02f; // param
 
     switch(event->key()) {
-    /*
-     * Translacije/rotacije objekta in ostala koda iz solskih vaj
-     *
-        case Qt::Key::Key_Q:
-            objekti[focusObject]->objrotX+=10;
-            break;
-        case Qt::Key::Key_W:
-            objekti[focusObject]->objrotX-=10;
-            break;
-        case Qt::Key::Key_E:
-            objekti[focusObject]->objrotY+=10;
-            break;
-        case Qt::Key::Key_R:
-            objekti[focusObject]->objrotY-=10;
-            break;
-        case Qt::Key::Key_T:
-            objekti[focusObject]->objrotZ+=10;
-            break;
-        case Qt::Key::Key_Y:
-            objekti[focusObject]->objrotZ-=10;
-            break;
-        case Qt::Key::Key_U:
-            objekti[focusObject]->objx0+=0.1;
-            break;
-        case Qt::Key::Key_I:
-            objekti[focusObject]->objx0-=0.1;
-            break;
-        case Qt::Key::Key_O:
-            objekti[focusObject]->objy0+=0.1;
-            break;
-        case Qt::Key::Key_P:
-            objekti[focusObject]->objy0-=0.1;
-            break;
-        case Qt::Key::Key_BracketLeft:
-            objekti[focusObject]->objz0+=0.1;
-            break;
-        case Qt::Key::Key_BracketRight:
-            objekti[focusObject]->objz0-=0.1;
-            break;
-        case Qt::Key::Key_2:
-            projMode = 0;
-            break;
-        case Qt::Key::Key_3:
-            projMode = 1;
-            break;
-        case Qt::Key::Key_Equal:
-            focusObject++;
-            focusObject %= objekti.size();
-            break;
-        case Qt::Key::Key_Z:
-            objekti[focusObject]->scale*=1.1;
-            break;
-        case Qt::Key::Key_X:
-            objekti[focusObject]->scale*=0.9;
-            break;
-        case Qt::Key::Key_A:
-            pitch += glm::pi<double>() / 30.0;
-            updateLookAt();
-            break;
-        case Qt::Key::Key_S:
-            pitch -= glm::pi<double>() / 30.0;
-            updateLookAt();
-            break;
-        case Qt::Key::Key_D:
-            yaw += glm::pi<double>() / 30.0;
-            updateLookAt();
-            break;
-        case Qt::Key::Key_F:
-            yaw -= glm::pi<double>() / 30.0;
-            updateLookAt();
-            break;
-        case Qt::Key::Key_G:
-            roll += glm::pi<double>() / 30.0;
-            updateUpVec();
-            break;
-        case Qt::Key::Key_H:
-            roll -= glm::pi<double>() / 30.0;
-            updateUpVec();
-            break;
-        case Qt::Key::Key_A:
-            pitch += glm::pi<double>() / 30.0;
-            updateLookAt();
-            break;
-        case Qt::Key::Key_S:
-            pitch -= glm::pi<double>() / 30.0;
-            updateLookAt();
-            break;
-        case Qt::Key::Key_D:
-            yaw += glm::pi<double>() / 30.0;
-            updateLookAt();
-            break;
-        case Qt::Key::Key_F:
-            yaw -= glm::pi<double>() / 30.0;
-            updateLookAt();
-            break;
-        case Qt::Key::Key_G:
-            roll += glm::pi<double>() / 30.0;
-            updateUpVec();
-            break;
-        case Qt::Key::Key_H:
-            roll -= glm::pi<double>() / 30.0;
-            updateUpVec();
-            break;
-    */
         case Qt::Key::Key_W:
             thirdP.camPos += speed * glm::normalize(projLookAt);
             break;
@@ -356,22 +217,22 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             stepAnimation();
             break;
         case Qt::Key::Key_4:
-            objekti[currObj]->rollo+=speed*sign;
+            objekti[currObj]->roll+=speed*sign;
             break;
         case Qt::Key::Key_5:
-            objekti[currObj]->pitcho+=speed*sign;
+            objekti[currObj]->pitch+=speed*sign;
             break;
         case Qt::Key::Key_6:
-            objekti[currObj]->yawo+=speed*sign;
+            objekti[currObj]->yaw+=speed*sign;
             break;
         case Qt::Key::Key_7:
-            objekti[currObj]->offset.x+=speed*sign;
+            objekti[currObj]->pos.x+=speed*sign;
             break;
         case Qt::Key::Key_8:
-            objekti[currObj]->offset.y+=speed*sign;
+            objekti[currObj]->pos.y+=speed*sign;
             break;
         case Qt::Key::Key_9:
-            objekti[currObj]->offset.z+=speed*sign;
+            objekti[currObj]->pos.z+=speed*sign;
             break;
         case Qt::Key::Key_BracketRight:
             currObj++;
@@ -391,88 +252,43 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
 
 void WidgetOpenGLDraw::wheelEvent(QWheelEvent *event){
     makeCurrent();
+
     double speed = 1.0;
+
+    if (activeCam == firstP){
+        return;
+    }
 
     if (event->delta() > 0)
         activeCam->zoom -= speed;
     else
         activeCam->zoom += speed;
 
-    /*
-     *  Stefko: za zdaj sva se zmenila, da ne rabimo tega
-     *
-    // Camera, Z translation.
-    if(!invert){
-        if(event->delta() > 0)
-            activeCam->camPos -= glm::vec3(0.0, 0.0, 0.1);
-        else
-            activeCam->camPos += glm::vec3(0.0, 0.0, 0.1);
-    }else{
-        if(event->delta() > 0)
-            roll += glm::pi<double>() / 30.0;
-        else
-            roll -= glm::pi<double>() / 30.0;
-
-        updateUpVec();
-    }
-    */
-
     update();
 }
 
 void WidgetOpenGLDraw::mousePressEvent(QMouseEvent *event){
     makeCurrent();
-
-    /*
-     *  Stefko: za zdaj sva se zmenila, da ne rabimo tega
-     *
-    if (event->button() == Qt::MiddleButton)
-        invert = !invert;
-
-    if (event->button()==Qt::LeftButton)
-        leftMouseButton = true;
-
-    if(event->button()==Qt::RightButton)
-        rightMouseButton = true;
-    */
-
     update();
 }
 
 void WidgetOpenGLDraw::mouseReleaseEvent(QMouseEvent *event){
     makeCurrent();
-    // do we need this?
-    //leftMouseButton = false;
-    //rightMouseButton = false;
+
     thirdP.lockToThirdPersonCamera = true;
     QWidget::setCursor(Qt::BlankCursor);
+
     update();
 }
 
 void WidgetOpenGLDraw::mouseMoveEvent(QMouseEvent *event){
-    /*
-     * todo: Stefan::
-     * ideja je, da bi miska bila v oknu nevidna (to je narjeno, v konstruktorju je klic funkcije)
-     * kaj bi blo treba nardit, je to, da nikoli ne prides z misko na rob
-     *  - jaz sem nekaj gledal, mogoce bi slo z kako funkcijo skos postavit misko na sredino potem, ko preberes da se je premaknila
-     *  - lahko tudi da ko prides z misko na rob, dalje vrtis kamero v tisto smer (kot da bi se miska premikala dalje - ven iz okna - kar se ne more)
-     *
-     * sej ves, ce v igrici misko premikas ne vem po mizi 1 meter, bos se zavrtel 3x okoli sebe. pri nas pa ko prides na rob okna, se nikamor ne mores vec premaknit
-     */
-
-    /* Rotacija kamere v 3D okolju: zdaj deluje OK */
-    /* Način rešitve: Cursor je "zaklenjen" na sredino (čeprav dejansko ni, saj se še vedno čuti "preskakovanje").*/
-    /* Na ta način bi moral cursor vedno ostati v sredini (razen če mam nevem 2,3 ali več screenov, takrat če hitro potegneš miško lahko da še vedno pobegne) */
-    /* Možna izboljšava: Limitiranje npr. Yaw-a (zdaj se lahko yawaš over and over again, če bo čas mogoče spisati kake meje, znotraj katerih kamera operira) */
-
-
     makeCurrent();
 
     if(thirdP.lockToThirdPersonCamera){
         double sensitivity = 0.004;
 
-        thirdP.yaw += sensitivity * (event->x() - current.x());
-        thirdP.pitch += sensitivity * (-(event->y() - current.y()));
+        thirdP.yaw += float(sensitivity * (event->x() - current.x()));
+        thirdP.pitch += float(sensitivity * (-(event->y() - current.y())));
         thirdP.updateLookAt();
 
         QPoint glob = mapToGlobal(QPoint(width()/2,height()/2));

@@ -16,12 +16,9 @@ public:
     ~Object();
 
     glm::vec3 pos;
-    double pitch;
-    double yaw;
-    double roll;
-
-    glm::vec3 offset;
-    double rollo, pitcho, yawo;
+    float pitch;
+    float yaw;
+    float roll;
 
     double scale;
 

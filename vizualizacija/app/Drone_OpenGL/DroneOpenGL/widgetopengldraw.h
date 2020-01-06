@@ -35,19 +35,15 @@ private:
     Camera* firstP;
     Camera* activeCam;
 
-    // premikanje objektov ---- debug
-    int currObj = 0;
-    int sign = 1;
-
+    // animation
     std::vector<double> animation;
-    int animationIdx= 0;
+    unsigned int animationIdx = 0;
 
-    // other
-    unsigned int projMode = 0;
-    //bool invert = false;
-    //bool leftMouseButton = false, rightMouseButton = false;
-    bool test = false;
+    // ui
     QPoint current = QPoint(0, 0);
+    // premikanje objektov ---- debug
+    unsigned int currObj = 0;
+    int sign = 1;
 protected:
 	void paintGL() override;
 	void initializeGL() override;

@@ -13,12 +13,11 @@ public:
     glm::vec3 camPos;
     glm::vec3 lookAt;
     glm::vec3 camUp;
-    double pitch;
-    double yaw;
-    double roll;
-    // factor of zoom;;
-    // we translate camera just before generating PVM by (zoom * normalize(lookAt))
-    double zoom;
+    float pitch;
+    float yaw;
+    float roll;
+
+    double zoom; // factor of zoom:: we translate camera just before generating PVM by (zoom * normalize(lookAt))
     bool lockToThirdPersonCamera;
 
     void updateUpVec();
