@@ -2,6 +2,7 @@
 #include <iostream>
 
 unsigned int drone::prevLocWindowSize = 5;
+unsigned int drone::LRUDWindowSize = 3;
 
 drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow_1, const char* texFileArrow_2, const char* texFileArrow_3, const char* texFileTrajectory) : Object(gl_in, objFile, texFile) {
     lookAt = glm::vec3(0.0, 0.0, -1.0);
@@ -83,44 +84,91 @@ drone::~drone(){
 }
 
 void drone::moveTo(glm::vec3 vec, unsigned int step){
+    pos = vec;
+    cam.camPos = pos - 2.0f * cam.lookAt + glm::vec3(0.0f, 1.0f, 0.0f);
+
     prevLocations.push(vec);
 
+    glm::vec4 L = glm::vec4(-1.0f, 0.0f, 0.0f, 1.0f);
+    glm::vec4 R = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    glm::vec4 U = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+    glm::vec4 D = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    glm::mat4 M = glm::mat4(1);
+    M = glm::translate(M, pos);
+    M = glm::rotate(M, yaw, glm::vec3(1, 0, 0));
+    M = glm::rotate(M, pitch, glm::vec3(0, 1, 0));
+    M = glm::rotate(M, roll, glm::vec3(0, 0, 1));
+
+    L = M * L; R = M * R; U = M * U; D = M * D;
+    glm::mat4 LRUD_current = glm::mat4(L, R, U, D);
+
+    LRUD.push(LRUD_current);
+
+    // trajectory height
     if (prevLocations.size() > prevLocWindowSize){
         prevLocations.pop();
 
-        // trajectory
         if (step % prevLocWindowSize == 0){
+            glm::vec3 prevPosition = prevLocations.front();
+            glm::vec3 currPosition = prevLocations.back();
 
-            // height
-            glm::vec3 previousPosition = prevLocations.front();
-            glm::vec3 currentPosition = prevLocations.back();
             std::vector<float> a = {
-                previousPosition.x, previousPosition.y, previousPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
-                currentPosition.x, currentPosition.y, currentPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
-                previousPosition.x, 0.0, previousPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
-                currentPosition.x, currentPosition.y, currentPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
-                previousPosition.x, 0.0, previousPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
-                currentPosition.x, 0.0, currentPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha
+                // upper
+                prevPosition.x, prevPosition.y, prevPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
+                currPosition.x, currPosition.y, currPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
+                prevPosition.x, 0.0,            prevPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
+                // lower
+                currPosition.x, currPosition.y, currPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
+                prevPosition.x, 0.0,            prevPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha,
+                currPosition.x, 0.0,            currPosition.z, 0.0, 0.0, 1.0, 0.0, 0.0, alpha
             };
 
             data_traj.insert(data_traj.end(), a.begin(), a.end());
-
-            // orientation & tilt
-            // todo
         }
     }
 
-    pos = vec;
+    // trajectory tilt
+    if (LRUD.size() > LRUDWindowSize){
+        LRUD.pop();
 
-    cam.camPos = pos - 2.0f * lookAt + glm::vec3(0.0f, 1.0f, 0.0f);
+        if (step % LRUDWindowSize == 0){
+            glm::mat4 prevLRUD = LRUD.front();
+            glm::mat4 currLRUD = LRUD.back();
+
+            std::vector<float> a = {
+                // horizontal
+                // left & older
+                prevLRUD[0][0], prevLRUD[0][1], prevLRUD[0][2], 0.0, 0.0, 1.0, 0.25, 0.25, alpha,
+                currLRUD[0][0], currLRUD[0][1], currLRUD[0][2], 0.0, 0.0, 1.0, 0.25, 0.25, alpha,
+                prevLRUD[1][0], prevLRUD[1][1], prevLRUD[1][2], 0.0, 0.0, 1.0, 0.25, 0.25, alpha,
+                // right & newer
+                prevLRUD[1][0], prevLRUD[1][1], prevLRUD[1][2], 0.0, 0.0, 1.0, 0.25, 0.25, alpha,
+                currLRUD[1][0], currLRUD[1][1], currLRUD[1][2], 0.0, 0.0, 1.0, 0.25, 0.25, alpha,
+                currLRUD[0][0], currLRUD[0][1], currLRUD[0][2], 0.0, 0.0, 1.0, 0.25, 0.25, alpha,
+
+                // vertical
+                // upper & older
+                prevLRUD[0 + 2][0], prevLRUD[0 + 2][1], prevLRUD[0 + 2][2], 0.0, 0.0, 1.0, 0.75, 0.75, alpha,
+                currLRUD[0 + 2][0], currLRUD[0 + 2][1], currLRUD[0 + 2][2], 0.0, 0.0, 1.0, 0.75, 0.75, alpha,
+                prevLRUD[1 + 2][0], prevLRUD[1 + 2][1], prevLRUD[1 + 2][2], 0.0, 0.0, 1.0, 0.75, 0.75, alpha,
+                // lower & newer
+                prevLRUD[1 + 2][0], prevLRUD[1 + 2][1], prevLRUD[1 + 2][2], 0.0, 0.0, 1.0, 0.75, 0.75, alpha,
+                currLRUD[1 + 2][0], currLRUD[1 + 2][1], currLRUD[1 + 2][2], 0.0, 0.0, 1.0, 0.75, 0.75, alpha,
+                currLRUD[0 + 2][0], currLRUD[0 + 2][1], currLRUD[0 + 2][2], 0.0, 0.0, 1.0, 0.75, 0.75, alpha
+            };
+
+            data_traj.insert(data_traj.end(), a.begin(), a.end());
+        }
+    }
 }
 
 void drone::tiltTo(float roll_, float pitch_, float yaw_){
     roll = roll_; pitch = pitch_; yaw = yaw_;
 
-    cam.roll = glm::pi<float>() / 2 - roll_;
+    cam.roll = glm::pi<float>() / 2 + roll_;
     cam.pitch = pitch_;
-    cam.yaw = -glm::pi<float>() / 2 - yaw_;
+    cam.yaw = -glm::pi<float>() / 2 + yaw_;
 
     cam.updateUpVec(); cam.updateLookAt();
 }

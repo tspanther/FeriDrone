@@ -19,7 +19,9 @@ public:
     Camera cam;
 private:
     std::queue<glm::vec3> prevLocations;
+    std::queue<glm::mat4> LRUD;
     static unsigned int prevLocWindowSize;
+    static unsigned int LRUDWindowSize;
 
     // convenience
     glm::vec3 lookAt;

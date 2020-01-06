@@ -102,7 +102,7 @@ void WidgetOpenGLDraw::initializeGL() {
 
     objekti.push_back(new Object(gl, "../DroneOpenGL/models/scena.obj", "../DroneOpenGL/models/plain_grey.jpg"));
 
-    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/arrow.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.png", "../DroneOpenGL/models/color.jpg");
+    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/arrow.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.png", "../DroneOpenGL/models/yellowblue.png");
     firstP = &dron->cam;
 
     const unsigned int err = gl->glGetError();
