@@ -10,13 +10,15 @@
 #include <QImage>
 #include "Source/OBJ_Loader.h"
 
-Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile) {
+Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, Light* light_in) {
     gl = gl_in;
 
     pos = glm::vec3(0.0f, 0.0f, 0.0f);
     roll = 0;
     pitch = 0;
     yaw = 0;
+
+    light = light_in;
 
     scale = 1.0;
 
@@ -53,7 +55,7 @@ Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char
 }
 
 
-void Object::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
+void Object::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::vec3 camPos) {
     glm::mat4 M = glm::mat4(1);
     M = glm::translate(M, pos); // object move
     M = glm::rotate(M, yaw, glm::vec3(1, 0, 0)); // object rotate
@@ -61,12 +63,24 @@ void Object::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
     M = glm::rotate(M, roll, glm::vec3(0, 0, 1));
     M = glm::scale(M, glm::vec3(scale, scale, scale));
     glm::mat4 PVM = P * V * M;
+    glm::mat4 normalMatrix = glm::transpose(glm::inverse(M));
 
     gl->glBindVertexArray(VAO);
     gl->glBindTexture(GL_TEXTURE_2D, tex_id);
     gl->glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
     gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "PVM"), 1, GL_FALSE, glm::value_ptr(PVM));
+    gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "M"), 1, GL_FALSE, glm::value_ptr(M));
+    gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "NormalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "lightColor"), 1, glm::value_ptr(light->color));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "lightPos"), 1, glm::value_ptr(light->lpos));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "campPos"), 1, glm::value_ptr(camPos));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Ra"), 1, glm::value_ptr(Ra));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Rd"), 1, glm::value_ptr(Rd));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Rs"), 1, glm::value_ptr(Rs));
+    gl->glUniform1i(gl->glGetUniformLocation(id_shader_program, "ns"), ns);
+    gl->glUniform1i(gl->glGetUniformLocation(id_shader_program, "activateShading"), 1);
+
     gl->glDrawArrays(GL_TRIANGLES, 0, data.size() * sizeof(float));
 }
 

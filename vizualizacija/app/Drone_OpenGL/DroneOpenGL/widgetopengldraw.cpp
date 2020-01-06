@@ -100,9 +100,20 @@ void WidgetOpenGLDraw::initializeGL() {
     gl->glEnable(GL_DEPTH_TEST);
     //glDisable(GL_CULL_FACE);
 
-    objekti.push_back(new Object(gl, "../DroneOpenGL/models/scena.obj", "../DroneOpenGL/models/plain_grey.jpg"));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scena.obj",
+                                 "../DroneOpenGL/models/plain_grey.jpg",
+                                 &light));
 
-    dron = new drone(gl, "../DroneOpenGL/models/drone.obj", "../DroneOpenGL/models/plain_red.jpg", "../DroneOpenGL/models/arrow.obj", "../DroneOpenGL/models/blue.jpg", "../DroneOpenGL/models/green.jpg", "../DroneOpenGL/models/purple.png", "../DroneOpenGL/models/yellowblue.png");
+    dron = new drone(gl,
+                     "../DroneOpenGL/models/drone.obj",
+                     "../DroneOpenGL/models/plain_red.jpg",
+                     "../DroneOpenGL/models/arrow.obj",
+                     "../DroneOpenGL/models/blue.jpg",
+                     "../DroneOpenGL/models/green.jpg",
+                     "../DroneOpenGL/models/purple.png",
+                     "../DroneOpenGL/models/yellowblue.png",
+                     &light);
     firstP = &dron->cam;
 
     const unsigned int err = gl->glGetError();
@@ -131,9 +142,9 @@ void WidgetOpenGLDraw::paintGL() {
     glm::mat4 V = glm::lookAt(camPosZoomed, activeCam->lookAt + activeCam->camPos, activeCam->camUp);
 
     for (unsigned int i = 0; i < objekti.size(); i++){
-        objekti[i]->draw(P, V, id_shader_program);
+        objekti[i]->draw(P, V, id_shader_program, activeCam->camPos);
     }
-    dron->draw(P, V, id_shader_program);
+    dron->draw(P, V, id_shader_program, activeCam->camPos);
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {

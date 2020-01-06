@@ -8,6 +8,7 @@
 #include <camera.h>
 #include <vector>
 #include <drone.h>
+#include <light.h>
 
 class QOpenGLFunctions_3_3_Core;
 class WidgetOpenGLDraw : public QOpenGLWidget{
@@ -34,6 +35,9 @@ private:
     Camera thirdP;
     Camera* firstP;
     Camera* activeCam;
+
+    // light
+    Light light;
 
     // animation
     std::vector<double> animation;

@@ -4,7 +4,7 @@
 unsigned int drone::prevLocWindowSize = 5;
 unsigned int drone::LRUDWindowSize = 3;
 
-drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow_1, const char* texFileArrow_2, const char* texFileArrow_3, const char* texFileTrajectory) : Object(gl_in, objFile, texFile) {
+drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow_1, const char* texFileArrow_2, const char* texFileArrow_3, const char* texFileTrajectory, Light* light_in) : Object(gl_in, objFile, texFile, light_in) {
     lookAt = glm::vec3(0.0, 0.0, -1.0);
     upVec = glm::vec3(0.0, 1.0, 0.0);
 
@@ -177,8 +177,8 @@ void drone::clearTraj(void){
     data_traj.clear();
 }
 
-void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program) {
-    Object::draw(P, V, id_shader_program);
+void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::vec3 camPos) {
+    Object::draw(P, V, id_shader_program, camPos);
 
     // trajectory
     gl->glBindVertexArray(VAO_traj);
