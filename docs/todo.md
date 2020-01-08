@@ -59,3 +59,14 @@ rg
         ...
         - dodatni ukazi zraven usmerjanja (streljanje, metanje bomb) - kodirani v preostalih kanalih
 ```
+
+
+
+
+
+aljaz shema;
+    - receiver
+        - f3-f4;; GND
+        - receiver-f4;; PE11
+        - receiver-f3;; GND
+        - receiver-f3;; 5V

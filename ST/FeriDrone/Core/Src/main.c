@@ -20,7 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os2.h"
+#include "cmsis_os.h"
 #include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -47,6 +47,7 @@
 #define HELIX_FREQ 0.2f
 #define HELIX_WL 5.0f
 #define HELIX_STEP 1000
+#define SILENT 0
 
 #define WIFI_BUFFER_SIZE 64
 /* USER CODE END PD */
@@ -65,6 +66,8 @@ I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
 
+TIM_HandleTypeDef htim1;
+
 osThreadId_t merjenjeNagibaHandle;
 osThreadId_t trilateracijaHandle;
 osThreadId_t pilotiranjeHandle;
@@ -82,6 +85,7 @@ static void MX_I2S2_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_I2C3_Init(void);
+static void MX_TIM1_Init(void);
 void StartMerjenjeNagiba(void *argument);
 void StartTrilateracija(void *argument);
 void StartPilotiranje(void *argument);
@@ -267,6 +271,7 @@ int main(void)
   MX_I2S3_Init();
   MX_SPI1_Init();
   MX_I2C3_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
@@ -577,6 +582,126 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM1_Init(void)
+{
+
+  /* USER CODE BEGIN TIM1_Init 0 */
+	/*
+htim1.Instance = TIM1;
+  htim1.Init.Prescaler = 64;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 65535;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_IC_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
+  sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
+  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
+  sSlaveConfig.TriggerPrescaler = TIM_ICPSC_DIV1;
+  sSlaveConfig.TriggerFilter = 0;
+  if (HAL_TIM_SlaveConfigSynchro(&htim1, &sSlaveConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_FALLING;
+  sConfigIC.ICSelection = TIM_ICSELECTION_INDIRECTTI;
+  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+  sConfigIC.ICFilter = 0;
+  if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+  if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_2);
+  HAL_TIM_IC_Start(&htim1, TIM_CHANNEL_1);
+	*/
+  /* USER CODE END TIM1_Init 0 */
+
+  TIM_SlaveConfigTypeDef sSlaveConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_IC_InitTypeDef sConfigIC = {0};
+
+  /* USER CODE BEGIN TIM1_Init 1 */
+
+  /* USER CODE END TIM1_Init 1 */
+  htim1.Instance = TIM1;
+    htim1.Init.Prescaler = 64;
+    htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim1.Init.Period = 65535;
+    htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim1.Init.RepetitionCounter = 0;
+    htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    if (HAL_TIM_IC_Init(&htim1) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
+    sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
+    sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
+    sSlaveConfig.TriggerPrescaler = TIM_ICPSC_DIV1;
+    sSlaveConfig.TriggerFilter = 0;
+    if (HAL_TIM_SlaveConfigSynchro(&htim1, &sSlaveConfig) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_FALLING;
+    sConfigIC.ICSelection = TIM_ICSELECTION_INDIRECTTI;
+    sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+    sConfigIC.ICFilter = 0;
+    if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+    sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+    if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_2);
+    HAL_TIM_IC_Start(&htim1, TIM_CHANNEL_1);
+  /* USER CODE BEGIN TIM1_Init 2 */
+
+  /* USER CODE END TIM1_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -821,6 +946,8 @@ void StartPilotiranje(void *argument)
 
 	if (MODE == MODE_MOCK) {
 		for (;;) {
+			//uint32_t period = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_2);
+			//uint32_t pulse = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
 			osDelay(100);
 		}
 	} else if (MODE == MODE_REAL) {
@@ -863,7 +990,9 @@ void StartPosiljanjeWifi(void *argument)
 			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK) {
 				if (wifiBufferIdx != 0) {
 					CompressBuffer();
-					CDC_Transmit_FS((uint8_t*) &wifiBuffer, wifiBufferIdx * sizeof(float));
+					if (!SILENT){
+						CDC_Transmit_FS((uint8_t*) &wifiBuffer, wifiBufferIdx * sizeof(float));
+					}
 					wifiBufferIdx = 0;
 				}
 				osSemaphoreRelease(wifiBufferSemaphoreHandle);
