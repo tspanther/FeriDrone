@@ -12,7 +12,8 @@ CHUNK = 882
 FORMAT = pyaudio.paInt16
 CHANNELS = 2
 RATE = 44100
-RECORD_SECONDS = 100
+RECORD_SECONDS = 5
+DEBUG = True
 
 q = queue.Queue()
 hist = numpy.zeros((8, 1))
@@ -69,11 +70,10 @@ def thread_obdelava(q):
             MAX_KANAL = 71
             MIN_KANAL = 26
             RANGE = MAX_KANAL - MIN_KANAL
-            global client
-            # throttle = (kanali[2] - MIN_KANAL)/RANGE-0.5
-            # print(throttle)
-            client.moveByRC(rcdata=airsim.RCData(throttle=(kanali[2] - MIN_KANAL)/RANGE-0.5, yaw=(kanali[3] - MIN_KANAL)/RANGE-0.5, pitch=(
-                kanali[1] - MIN_KANAL)/RANGE - 0.5, roll=(kanali[0] - MIN_KANAL)/RANGE - 0.5, is_initialized=True, is_valid=True))
+            if (DEBUG is False):
+                global client
+                client.moveByRC(rcdata=airsim.RCData(throttle=(kanali[2] - MIN_KANAL)/RANGE-0.5, yaw=(kanali[3] - MIN_KANAL)/RANGE-0.5, pitch=(
+                    kanali[1] - MIN_KANAL)/RANGE - 0.5, roll=(kanali[0] - MIN_KANAL)/RANGE - 0.5, is_initialized=True, is_valid=True))
 
             hist = numpy.c_[hist, kanali.T]
             for k in range(CHUNK):
@@ -102,17 +102,18 @@ def find_offset(data):
         if (samplesAbove05 >= 200):
             return i - 180
 
-    raise(Exception('niko je neumen'))
+    raise(Exception('offset find error'))
     return -1
 
 
 
 if __name__ == '__main__':
-    client = airsim.MultirotorClient()
-    client.confirmConnection()
-    client.enableApiControl(True)
-    client.armDisarm(True)
-    client.moveByManualAsync(vx_max = 1E6, vy_max = 1E6, z_min = -1E6, duration = 1E10)
+    if DEBUG == False:
+        client = airsim.MultirotorClient()
+        client.confirmConnection()
+        client.enableApiControl(True)
+        client.armDisarm(True)
+        client.moveByManualAsync(vx_max = 1E6, vy_max = 1E6, z_min = -1E6, duration = 1E10)
     
     p = pyaudio.PyAudio()
 
