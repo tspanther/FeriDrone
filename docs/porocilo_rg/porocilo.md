@@ -87,9 +87,9 @@ https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 - Wifi vmesnik
 - filtriranje podatkov (low pass)
 
-### Trajektorija nagnjenosti - platojev
+### Trajektorija nagnjenosti - platojev - DONE: Niko
 
-'stripes 3d flight'
+'stripes 3d flight' 
 
 ### Opcijsko: Igra
 
@@ -100,9 +100,9 @@ https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 ...
 - dodatni ukazi zraven usmerjanja (streljanje, metanje bomb) - kodirani v preostalih kanalih
 
-### Menu
+### Menu - TODO: Štefan
 
-Uporabniski vmesnik za izbiro nacina delovanja aplikacije (preprost)
+Uporabniski vmesnik za izbiro nacina delovanja aplikacije (preprost) 
 
 App modes:
 - Real-time renderiranje iz toka podatkov
@@ -111,3 +111,9 @@ App modes:
 
 Drugo:
 - obkljukanje/odkljukanje atributov za prikaz
+
+### Razdelitev dela
+
+Implementacija FPS (aka. drone view), izdelava animacije, puščice smeri gibanja, izdelava osnove 3PS, izdelava prikaza nagiba - Niko
+Implementacija 3PS, izdelava osnovne trajektorije, nalaganje kompleksnih objektov - Štefan
+Priprava osnovnih objetov (drone), teksturiranje in dodajanje podrobnosti objektom - Aljaž
