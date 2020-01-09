@@ -115,5 +115,7 @@ Drugo:
 ### Razdelitev dela
 
 Implementacija FPS (aka. drone view), izdelava animacije, puščice smeri gibanja, izdelava osnove 3PS, izdelava prikaza nagiba - Niko
+
 Implementacija 3PS, izdelava osnovne trajektorije, nalaganje kompleksnih objektov - Štefan
+
 Priprava osnovnih objetov (drone), teksturiranje in dodajanje podrobnosti objektom - Aljaž
