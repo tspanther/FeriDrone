@@ -45,8 +45,8 @@
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
 extern uint32_t PWM_paket_ready[8];
-extern uint8_t PWM_paket_new = 0;
-extern uint8_t PWM_operating = 0;
+extern uint8_t PWM_paket_new;
+extern uint8_t PWM_operating;
 
 volatile uint32_t PWM_paket_buffer[8];
 volatile uint8_t PWM_write_idx = 0;
@@ -59,7 +59,7 @@ volatile uint8_t PWM_write_idx = 0;
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void capturePWMPulse(void){
+void capturePWMPulse(void* htim1){
 	/*
 	 * Vrstni red:
 	 * [? ? ? ... MED_PAKETOMA, R_LR, R_UD, L_UD, L_LR, ]
@@ -67,8 +67,8 @@ void capturePWMPulse(void){
 	 * MED_PAKETOMA == [8k 12k]
 	 * {L, R}_{LR, UD} == [800, 2050]
 	 */
-	uint32_t period = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_2);
-	uint32_t pulse = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
+	uint32_t period = HAL_TIM_ReadCapturedValue(htim1, TIM_CHANNEL_2);
+	uint32_t pulse = HAL_TIM_ReadCapturedValue(htim1, TIM_CHANNEL_1);
 	if (!PWM_operating) {
 		if (pulse > 6000 && pulse < 14000) {
 			PWM_operating = 1;
@@ -240,7 +240,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 void TIM1_CC_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_CC_IRQn 0 */
-	capturePWMPulse();
+	capturePWMPulse(&htim1);
   /* USER CODE END TIM1_CC_IRQn 0 */
   HAL_TIM_IRQHandler(&htim1);
   /* USER CODE BEGIN TIM1_CC_IRQn 1 */

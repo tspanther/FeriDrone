@@ -73,6 +73,7 @@ osThreadId_t trilateracijaHandle;
 osThreadId_t pilotiranjeHandle;
 osThreadId_t posiljanjeWifiHandle;
 osThreadId_t transmitPWMHandle;
+osThreadId_t altitudeMeasureHandle;
 osSemaphoreId_t wifiBufferSemaphoreHandle;
 /* USER CODE BEGIN PV */
 
@@ -112,6 +113,10 @@ uint32_t PWM_generated[8];
 float wifiBuffer[WIFI_BUFFER_SIZE];
 uint8_t wifiBufferIdx = 0;
 
+// usb -- debug
+extern float height_from_simul;
+extern uint8_t height_ready;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -128,6 +133,7 @@ void StartTrilateracija(void *argument);
 void StartPilotiranje(void *argument);
 void StartPosiljanjeWifi(void *argument);
 void StartTransmitPWM(void *argument);
+void StartAltitudeMeasure(void *argument);
 
 /* USER CODE BEGIN PFP */
 uint8_t spi1_beriRegister(uint8_t);
@@ -158,11 +164,16 @@ uint8_t isAutolandRequested(uint32_t* PWM){
 }
 
 void autolander_newMeasurement(float measurement){
+	if (!autolanderCommencing || autolanderScheduleReady) {
+		return;
+	}
+
 	if (heightSample_idx < ROUGH_EST_SAMPLES_NUM){
 		heightSamples[heightSample_idx] = measurement;
 	} else if (heightSample_idx < ROUGH_EST_SAMPLES_NUM * 2){
 		velocities[heightSample_idx - ROUGH_EST_SAMPLES_NUM] = heightSamples[heightSample_idx - ROUGH_EST_SAMPLES_NUM] - measurement;
 	}
+
 	heightSample_idx++;
 }
 
@@ -424,6 +435,14 @@ int main(void)
     .stack_size = 512
   };
   transmitPWMHandle = osThreadNew(StartTransmitPWM, NULL, &transmitPWM_attributes);
+
+  /* definition and creation of altitudeMeasure */
+  const osThreadAttr_t altitudeMeasure_attributes = {
+    .name = "altitudeMeasure",
+    .priority = (osPriority_t) osPriorityNormal,
+    .stack_size = 512
+  };
+  altitudeMeasureHandle = osThreadNew(StartAltitudeMeasure, NULL, &altitudeMeasure_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -1035,19 +1054,19 @@ void StartPilotiranje(void *argument)
 
 	if (MODE == MODE_MOCK) {
 		for (;;) {
-			if (PWM_paket_new) {
+			if (PWM_paket_ready) {
 				uint32_t PWM[8];
 
 				for (uint8_t i = 0; i < 8; i++) {
 					// todo: samo menjaj kazalce
-					PWM[i] = PWM_paket_ready[i];
+					PWM[i] = PWM_paket_new[i];
 				}
 
-				uint8_t autolander = isAutolanderOn(&PWM[0]);
+				uint8_t autolander = isAutolandRequested(&PWM[0]);
 				if (autolander && !autolanderCommencing) {
 					init_autolander();
 				} else if (!autolander && autolanderCommencing){
-					terminateAutolander();
+					terminate_autolander();
 				}
 
 				if (autolanderScheduleReady) {
@@ -1066,7 +1085,7 @@ void StartPilotiranje(void *argument)
 					PWM_generated[i] = PWM[i];
 				}
 
-				PWM_paket_new = 0;
+				PWM_paket_ready = 0;
 			}
 			osDelay(5);
 		}
@@ -1143,8 +1162,15 @@ void StartTransmitPWM(void *argument)
   {
 	  if (MODE == MODE_MOCK) {
 		  if (prev_ts != ts && autolanderScheduleReady) {
+			  float rezultat[2];
+			  char b[] = { 0xaa, 0xad, 0xaa, 0xad };
+			  memcpy(&rezultat[0], &b, sizeof(float));
+
 			  float thrust = OBJECT_MAX_THRUST * ((PWM_generated[THROTTLE_IDX] - PWM_LOW) / (PWM_HIGH - PWM_LOW));
-			  CDC_Transmit_FS((uint8_t*) &thrust, sizeof(float));
+			  rezultat[1] = thrust;
+
+			  CDC_Transmit_FS((uint8_t*) &rezultat[0], sizeof(float));
+
 			  prev_ts++;
 		  }
 	  }
@@ -1154,6 +1180,36 @@ void StartTransmitPWM(void *argument)
     osDelay(10);
   }
   /* USER CODE END StartTransmitPWM */
+}
+
+/* USER CODE BEGIN Header_StartAltitudeMeasure */
+/**
+* @brief Function implementing the altitudeMeasure thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartAltitudeMeasure */
+void StartAltitudeMeasure(void *argument)
+{
+  /* USER CODE BEGIN StartAltitudeMeasure */
+  /* Infinite loop */
+
+  for(;;)
+  {
+    if (MODE == MODE_MOCK) {
+    	while(!height_ready) {
+    		osDelay(1);
+    	}
+    	autolander_newMeasurement(height_from_simul);
+    	height_ready = 0;
+    	osDelay((int)HEIGHT_SAMPLING_INTE * 950);
+    } else {
+    	// todo: ToF
+    	osDelay((int)HEIGHT_SAMPLING_INTE * 1000);
+    }
+
+  }
+  /* USER CODE END StartAltitudeMeasure */
 }
 
 /**
