@@ -37,13 +37,13 @@ class GravitySim():
     def __init__(self,
                  AutoLanderClass,
                  animate=False,         # animate the plots
-                 timeDuration=10,       # seconds
-                 timeStep=0.001,        # seconds
-                 snr_dB=15.0,           # power of signal over noise
+                 timeDuration=3,       # seconds
+                 timeStep=0.0035,        # seconds
+                 snr_dB=12.0,           # power of signal over noise
                  objectMass=0.5,        # kg
                  objectMaxThrust=11.06,  # F (force of engines)
-                 startHeight=10,         # meters (initial height)
-                 startVelocity=6,       # meters / seconds (initial velocity)
+                 startHeight=1,         # meters (initial height)
+                 startVelocity=0.0,       # meters / seconds (initial velocity)
                  startThrust=0):        # percentage of maxThrust (initial force)
 
         self.simTimeIndex = 0    # index of time step in simulation
@@ -286,7 +286,7 @@ class GravitySim():
 
         plt.show()
 
-from autolander import AutoLander
+from autolander2 import AutoLander
 
 if __name__ == '__main__':
     grav_sim = GravitySim(AutoLander,

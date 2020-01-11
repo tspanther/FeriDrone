@@ -44,7 +44,12 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
+extern uint32_t PWM_paket_ready[8];
+extern uint8_t PWM_paket_new = 0;
+extern uint8_t PWM_operating = 0;
 
+volatile uint32_t PWM_paket_buffer[8];
+volatile uint8_t PWM_write_idx = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -54,7 +59,45 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void capturePWMPulse(void){
+	/*
+	 * Vrstni red:
+	 * [? ? ? ... MED_PAKETOMA, R_LR, R_UD, L_UD, L_LR, ]
+	 *
+	 * MED_PAKETOMA == [8k 12k]
+	 * {L, R}_{LR, UD} == [800, 2050]
+	 */
+	uint32_t period = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_2);
+	uint32_t pulse = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
+	if (!PWM_operating) {
+		if (pulse > 6000 && pulse < 14000) {
+			PWM_operating = 1;
+			PWM_write_idx = 0;
+		}
+	} else {
+		if (PWM_write_idx == 0){
+			if (pulse < 6000 || pulse > 14000) {
+				PWM_operating = 0;
+				return;
+			}
+		} else {
+			if (pulse < 600 || pulse > 2400) {
+				PWM_operating = 0;
+				return;
+			}
+		}
+		PWM_paket_buffer[PWM_write_idx] = pulse;
+		PWM_write_idx++; PWM_write_idx %= 8;
 
+		if (PWM_write_idx == 0) {
+			for (uint8_t i = 0; i < 8; i++) {
+				// todo: samo menjaj kazalce
+				PWM_paket_ready[i] = PWM_paket_buffer[i];
+			}
+			PWM_paket_new = 1;
+		}
+	}
+}
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -184,8 +227,6 @@ void TIM1_UP_TIM10_IRQHandler(void)
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 0 */
 
   /* USER CODE END TIM1_UP_TIM10_IRQn 0 */
-	//uint32_t period = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_2);
-	//uint32_t pulse = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
   HAL_TIM_IRQHandler(&htim1);
   HAL_TIM_IRQHandler(&htim10);
   /* USER CODE BEGIN TIM1_UP_TIM10_IRQn 1 */
@@ -193,20 +234,13 @@ void TIM1_UP_TIM10_IRQHandler(void)
   /* USER CODE END TIM1_UP_TIM10_IRQn 1 */
 }
 
-volatile uint32_t pp[2];
-
 /**
   * @brief This function handles TIM1 capture compare interrupt.
   */
 void TIM1_CC_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_CC_IRQn 0 */
-	uint32_t period = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_2);
-	uint32_t pulse = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
-	pp[0] = period;
-	pp[1] = pulse;
-
-	CDC_Transmit_FS((uint8_t*) &pp, 2 * sizeof(uint32_t));
+	capturePWMPulse();
   /* USER CODE END TIM1_CC_IRQn 0 */
   HAL_TIM_IRQHandler(&htim1);
   /* USER CODE BEGIN TIM1_CC_IRQn 1 */

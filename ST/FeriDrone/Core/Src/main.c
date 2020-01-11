@@ -39,15 +39,15 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define TOFS_devID 0x29
-#define MODE_MOCK 1
-#define MODE_REAL 0
-#define MODE MODE_MOCK
 
 // MOCK
 #define HELIX_FREQ 0.2f
 #define HELIX_WL 5.0f
 #define HELIX_STEP 1000
 #define SILENT 0
+#define MODE_MOCK 1
+#define MODE_REAL 0
+#define MODE MODE_MOCK
 
 #define WIFI_BUFFER_SIZE 64
 /* USER CODE END PD */
@@ -74,6 +74,42 @@ osThreadId_t pilotiranjeHandle;
 osThreadId_t posiljanjeWifiHandle;
 osSemaphoreId_t wifiBufferSemaphoreHandle;
 /* USER CODE BEGIN PV */
+
+// AUTOLANDER
+// algorithm
+#define HEIGHT_SAMPLING_FREQ 285.0f
+#define HEIGHT_SAMPLING_INTE (1.0f / HEIGHT_SAMPLING_FREQ)
+#define ROUGH_EST_SAMPLES_NUM 32
+uint8_t heightSample_idx = 0;
+float heightSamples[ROUGH_EST_SAMPLES_NUM];
+float velocities[ROUGH_EST_SAMPLES_NUM];
+
+// schedule
+uint8_t autolanderCommencing = 0;
+uint8_t autolanderScheduleReady = 0;
+uint8_t ts = 0;
+uint16_t tsDecel = 0;
+uint16_t tsStopDecel = 0;
+
+// drone & physics
+#define DRONE_MASS 0.5f
+#define G 9.81f
+#define OBJECT_MAX_THRUST 11.06f
+
+// PWM
+#define THROTTLE_IDX 2
+#define PWM_LOW 800
+#define PWM_HIGH 2050
+#define PWM_PAUSE_LOW 6000
+#define PWM_PAUSE_HIGH 14000
+volatile uint32_t PWM_paket_new[8];
+volatile uint8_t PWM_paket_ready = 0;
+volatile uint8_t PWM_operating = 0;
+uint32_t PWM_generated[8];
+
+// wifi
+float wifiBuffer[WIFI_BUFFER_SIZE];
+uint8_t wifiBufferIdx = 0;
 
 /* USER CODE END PV */
 
@@ -103,8 +139,78 @@ void initLSM303DLHC(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-float wifiBuffer[WIFI_BUFFER_SIZE];
-uint8_t wifiBufferIdx = 0;
+
+void init_autolander(void) {
+	autolanderCommencing = 1;
+	autolanderScheduleReady = 0;
+}
+
+void terminate_autolander(void) {
+	autolanderCommencing = 0;
+	autolanderScheduleReady = 0;
+}
+
+uint8_t isAutolandRequested(uint32_t* PWM){
+	// todo
+	return 1;
+}
+
+void autolander_newMeasurement(float measurement){
+	/*
+	if (heightSamplingON == 0){
+		return;
+	}
+	*/
+
+	if (heightSample_idx < ROUGH_EST_SAMPLES_NUM){
+		heightSamples[heightSample_idx] = measurement;
+	} else if (heightSample_idx < ROUGH_EST_SAMPLES_NUM * 2){
+		velocities[heightSample_idx - ROUGH_EST_SAMPLES_NUM] = heightSamples[heightSample_idx - ROUGH_EST_SAMPLES_NUM] - measurement;
+	}
+
+	heightSample_idx++;
+	/*
+	if (heightSample_idx == ROUGH_EST_SAMPLES_NUM * 2){
+		heightSamplingON = 0;
+	}
+	*/
+}
+
+void autolander_compileSchedule(){
+	ts = ROUGH_EST_SAMPLES_NUM * 2;
+
+	float sVel = 0.0f;
+	for (uint8_t i = 0; i < ROUGH_EST_SAMPLES_NUM; i++){
+		sVel -= heightSamples[i] / ROUGH_EST_SAMPLES_NUM;
+	}
+	float sAlt = 0.0f;
+	for (uint8_t i = 0; i < ROUGH_EST_SAMPLES_NUM; i++){
+		float v_i = sVel - i * HEIGHT_SAMPLING_INTE / 2.0f * G;
+		sAlt += (heightSamples[i] + v_i * HEIGHT_SAMPLING_INTE * i) / ROUGH_EST_SAMPLES_NUM;
+	}
+
+	float h = sAlt + sVel * sVel / 2.0f / G;
+	float aimedAltitude = 0.25;
+	if (aimedAltitude < h / 20.0f){
+		aimedAltitude = h / 20.0f;
+	}
+	h -= aimedAltitude;
+
+	float F_d = OBJECT_MAX_THRUST - DRONE_MASS * G;
+	float a_d = F_d / DRONE_MASS;
+	float x = G * h / (G + a_d);
+	float h_allowTravel = h - x;
+
+	float timeToStartDecel = sqrt(2.0f * h_allowTravel / G);
+	float moveTimeStep = sVel / G / HEIGHT_SAMPLING_INTE;
+
+	tsDecel = (int)(timeToStartDecel / HEIGHT_SAMPLING_INTE + moveTimeStep);
+
+	float maxVelocity = timeToStartDecel * G;
+	float decelTime = maxVelocity / a_d;
+
+	tsStopDecel = (int)(tsDecel + decelTime / HEIGHT_SAMPLING_INTE) + 1;
+}
 
 void addToWifiBuffer(float* data, uint8_t size, uint8_t* lastBufferIdx){
 	if (wifiBufferIdx > WIFI_BUFFER_SIZE - size - 1){
@@ -946,9 +1052,40 @@ void StartPilotiranje(void *argument)
 
 	if (MODE == MODE_MOCK) {
 		for (;;) {
-			//uint32_t period = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_2);
-			//uint32_t pulse = HAL_TIM_ReadCapturedValue(&htim1, TIM_CHANNEL_1);
-			osDelay(100);
+			if (PWM_paket_new) {
+				uint32_t PWM[8];
+
+				for (uint8_t i = 0; i < 8; i++) {
+					// todo: samo menjaj kazalce
+					PWM[i] = PWM_paket_ready[i];
+				}
+
+				uint8_t autolander = isAutolanderOn(&PWM[0]);
+				if (autolander && !autolanderCommencing) {
+					init_autolander();
+				} else if (!autolander && autolanderCommencing){
+					terminateAutolander();
+				}
+
+				if (autolanderScheduleReady) {
+					if (ts < tsDecel) {
+						PWM[THROTTLE_IDX] = PWM_LOW;
+					} else if (ts < tsStopDecel) {
+						PWM[THROTTLE_IDX] = PWM_HIGH;
+					} else {
+						PWM[THROTTLE_IDX] = (int)(PWM_LOW + (float)(PWM_HIGH - PWM_LOW) * 0.45f);
+					}
+					ts++;
+				}
+
+				for (uint8_t i = 0; i < 8; i++) {
+					// todo: samo menjaj kazalce
+					PWM_generated[i] = PWM[i];
+				}
+
+				PWM_paket_new = 0;
+			}
+			osDelay(5);
 		}
 	} else if (MODE == MODE_REAL) {
 		VL53L0X_Dev_t dev1;
