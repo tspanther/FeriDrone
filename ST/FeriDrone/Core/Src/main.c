@@ -72,6 +72,7 @@ osThreadId_t merjenjeNagibaHandle;
 osThreadId_t trilateracijaHandle;
 osThreadId_t pilotiranjeHandle;
 osThreadId_t posiljanjeWifiHandle;
+osThreadId_t transmitPWMHandle;
 osSemaphoreId_t wifiBufferSemaphoreHandle;
 /* USER CODE BEGIN PV */
 
@@ -126,6 +127,7 @@ void StartMerjenjeNagiba(void *argument);
 void StartTrilateracija(void *argument);
 void StartPilotiranje(void *argument);
 void StartPosiljanjeWifi(void *argument);
+void StartTransmitPWM(void *argument);
 
 /* USER CODE BEGIN PFP */
 uint8_t spi1_beriRegister(uint8_t);
@@ -156,24 +158,12 @@ uint8_t isAutolandRequested(uint32_t* PWM){
 }
 
 void autolander_newMeasurement(float measurement){
-	/*
-	if (heightSamplingON == 0){
-		return;
-	}
-	*/
-
 	if (heightSample_idx < ROUGH_EST_SAMPLES_NUM){
 		heightSamples[heightSample_idx] = measurement;
 	} else if (heightSample_idx < ROUGH_EST_SAMPLES_NUM * 2){
 		velocities[heightSample_idx - ROUGH_EST_SAMPLES_NUM] = heightSamples[heightSample_idx - ROUGH_EST_SAMPLES_NUM] - measurement;
 	}
-
 	heightSample_idx++;
-	/*
-	if (heightSample_idx == ROUGH_EST_SAMPLES_NUM * 2){
-		heightSamplingON = 0;
-	}
-	*/
 }
 
 void autolander_compileSchedule(){
@@ -253,33 +243,18 @@ VL53L0X_Error InitDevice(VL53L0X_Dev_t *pMyDevice) {
 
   if (Status == VL53L0X_ERROR_NONE)
     Status = VL53L0X_DataInit(pMyDevice);
-  // if (Status != VL53L0X_ERROR_NONE)
-  //   return Status;
-  // debug_LED(0xf);
 
   if (Status == VL53L0X_ERROR_NONE)
     Status = VL53L0X_StaticInit(pMyDevice);
-  // if (Status != VL53L0X_ERROR_NONE)
-  //   return Status;
-  // debug_LED(0xf);
 
   if (Status == VL53L0X_ERROR_NONE)
     Status = VL53L0X_PerformRefSpadManagement(pMyDevice, &refSpadCount, &isApertureSpads); // Device Initialization
-  // if (Status != VL53L0X_ERROR_NONE)
-  //   return Status;
-  // debug_LED(0xf);
 
   if (Status == VL53L0X_ERROR_NONE)
     Status = VL53L0X_PerformRefCalibration(pMyDevice, &VhvSettings, &PhaseCal);
-  // if (Status != VL53L0X_ERROR_NONE)
-  //   return Status;
-  // debug_LED(0xf);
 
   if (Status == VL53L0X_ERROR_NONE)
     Status = VL53L0X_SetDeviceMode(pMyDevice, VL53L0X_DEVICEMODE_CONTINUOUS_RANGING);
-  // if (Status != VL53L0X_ERROR_NONE)
-  //   return Status;
-  // debug_LED(0xf);
 
   return Status;
 }
@@ -441,6 +416,14 @@ int main(void)
     .stack_size = 512
   };
   posiljanjeWifiHandle = osThreadNew(StartPosiljanjeWifi, NULL, &posiljanjeWifi_attributes);
+
+  /* definition and creation of transmitPWM */
+  const osThreadAttr_t transmitPWM_attributes = {
+    .name = "transmitPWM",
+    .priority = (osPriority_t) osPriorityNormal,
+    .stack_size = 512
+  };
+  transmitPWMHandle = osThreadNew(StartTransmitPWM, NULL, &transmitPWM_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -1142,6 +1125,35 @@ void StartPosiljanjeWifi(void *argument)
 		}
 	}
   /* USER CODE END StartPosiljanjeWifi */
+}
+
+/* USER CODE BEGIN Header_StartTransmitPWM */
+/**
+* @brief Function implementing the transmitPWM thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartTransmitPWM */
+void StartTransmitPWM(void *argument)
+{
+  /* USER CODE BEGIN StartTransmitPWM */
+  /* Infinite loop */
+	uint8_t prev_ts = 0;
+  for(;;)
+  {
+	  if (MODE == MODE_MOCK) {
+		  if (prev_ts != ts && autolanderScheduleReady) {
+			  float thrust = OBJECT_MAX_THRUST * ((PWM_generated[THROTTLE_IDX] - PWM_LOW) / (PWM_HIGH - PWM_LOW));
+			  CDC_Transmit_FS((uint8_t*) &thrust, sizeof(float));
+			  prev_ts++;
+		  }
+	  }
+	  else {
+		  // todo: generiranje PWM
+	  }
+    osDelay(10);
+  }
+  /* USER CODE END StartTransmitPWM */
 }
 
 /**
