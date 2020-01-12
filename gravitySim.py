@@ -39,7 +39,7 @@ class GravitySim():
                  animate=False,         # animate the plots
                  timeDuration=3,       # seconds
                  timeStep=0.0035,        # seconds
-                 snr_dB=12.0,           # power of signal over noise
+                 snr_dB=100.0,           # power of signal over noise
                  objectMass=0.5,        # kg
                  objectMaxThrust=11.06,  # F (force of engines)
                  startHeight=1,         # meters (initial height)
@@ -287,6 +287,7 @@ class GravitySim():
         plt.show()
 
 from autolander_comport import AutoLander
+#from autolander2 import AutoLander
 
 if __name__ == '__main__':
     grav_sim = GravitySim(AutoLander,

@@ -85,6 +85,8 @@ class AutoLander():
 
         self.tsStopDecel = int(self.tsDecel + decelTime / self.timeStep) + 1
 
+        return
+
     @property
     def heightFiltered(self):
         return self.currentAltitude

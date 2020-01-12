@@ -82,16 +82,16 @@ osSemaphoreId_t wifiBufferSemaphoreHandle;
 #define HEIGHT_SAMPLING_FREQ 285.0f
 #define HEIGHT_SAMPLING_INTE (1.0f / HEIGHT_SAMPLING_FREQ)
 #define ROUGH_EST_SAMPLES_NUM 32
-uint8_t heightSample_idx = 0;
-float heightSamples[ROUGH_EST_SAMPLES_NUM];
-float velocities[ROUGH_EST_SAMPLES_NUM];
+volatile uint8_t heightSample_idx = 0;
+volatile float heightSamples[ROUGH_EST_SAMPLES_NUM];
+volatile float velocities[ROUGH_EST_SAMPLES_NUM];
 
 // schedule
-uint8_t autolanderCommencing = 0;
-uint8_t autolanderScheduleReady = 0;
-uint8_t ts = 0;
-uint16_t tsDecel = 0;
-uint16_t tsStopDecel = 0;
+volatile uint8_t autolanderCommencing = 0;
+volatile uint8_t autolanderScheduleReady = 0;
+volatile uint8_t ts = 0;
+volatile uint16_t tsDecel = 0;
+volatile uint16_t tsStopDecel = 0;
 
 // drone & physics
 #define DRONE_MASS 0.5f
@@ -107,11 +107,11 @@ uint16_t tsStopDecel = 0;
 #define PWM_PAUSE_HIGH 14000
 volatile uint32_t PWM_paket_new[8];
 volatile uint8_t PWM_paket_ready = 0;
-uint32_t PWM_generated[8];
+volatile uint32_t PWM_generated[8];
 
 // wifi
 float wifiBuffer[WIFI_BUFFER_SIZE];
-uint8_t wifiBufferIdx = 0;
+volatile uint8_t wifiBufferIdx = 0;
 
 // usb -- debug
 extern float height_from_simul;
@@ -162,28 +162,12 @@ uint8_t isAutolandRequested(uint32_t* PWM){
 	return *(PWM + AUTOLANDER_CHANNEL) > 1800;
 }
 
-void autolander_newMeasurement(float measurement){
-	if (!autolanderCommencing || autolanderScheduleReady) {
-		return;
-	}
-
-	if (heightSample_idx < ROUGH_EST_SAMPLES_NUM){
-		heightSamples[heightSample_idx] = measurement;
-	} else if (heightSample_idx < ROUGH_EST_SAMPLES_NUM * 2){
-		velocities[heightSample_idx - ROUGH_EST_SAMPLES_NUM] = heightSamples[heightSample_idx - ROUGH_EST_SAMPLES_NUM] - measurement;
-	}
-
-	heightSample_idx++;
-
-	return;
-}
-
-void autolander_compileSchedule(){
+void autolander_compileSchedule(void){
 	ts = ROUGH_EST_SAMPLES_NUM * 2;
 
 	float sVel = 0.0f;
 	for (uint8_t i = 0; i < ROUGH_EST_SAMPLES_NUM; i++){
-		sVel -= heightSamples[i] / ROUGH_EST_SAMPLES_NUM;
+		sVel -= velocities[i] / ROUGH_EST_SAMPLES_NUM;
 	}
 	float sAlt = 0.0f;
 	for (uint8_t i = 0; i < ROUGH_EST_SAMPLES_NUM; i++){
@@ -212,6 +196,29 @@ void autolander_compileSchedule(){
 	float decelTime = maxVelocity / a_d;
 
 	tsStopDecel = (int)(tsDecel + decelTime / HEIGHT_SAMPLING_INTE) + 1;
+
+	return;
+}
+
+void autolander_newMeasurement(float measurement){
+	if (!autolanderCommencing || autolanderScheduleReady) {
+		return;
+	}
+
+	if (heightSample_idx < ROUGH_EST_SAMPLES_NUM){
+		heightSamples[heightSample_idx] = measurement;
+	} else if (heightSample_idx < ROUGH_EST_SAMPLES_NUM * 2){
+		float velocityStep = (ts - ROUGH_EST_SAMPLES_NUM / 2) * HEIGHT_SAMPLING_INTE * G;
+		velocities[heightSample_idx - ROUGH_EST_SAMPLES_NUM] = (heightSamples[heightSample_idx - ROUGH_EST_SAMPLES_NUM] - measurement) / (HEIGHT_SAMPLING_INTE * ROUGH_EST_SAMPLES_NUM) - velocityStep;
+	}
+
+	heightSample_idx++;
+
+	if (heightSample_idx == ROUGH_EST_SAMPLES_NUM * 2) {
+		autolander_compileSchedule();
+	}
+
+	ts++;
 
 	return;
 }
@@ -1083,7 +1090,6 @@ void StartPilotiranje(void *argument)
 					} else {
 						PWM[THROTTLE_CHANNEL] = (int)(PWM_LOW + (float)(PWM_HIGH - PWM_LOW) * 0.45f);
 					}
-					ts++;
 				}
 
 				for (uint8_t i = 0; i < 8; i++) {
@@ -1093,7 +1099,7 @@ void StartPilotiranje(void *argument)
 
 				PWM_paket_ready = 0;
 			}
-			osDelay(100);
+			osDelay(5);
 		}
 	} else if (MODE == MODE_REAL) {
 		VL53L0X_Dev_t dev1;
@@ -1183,7 +1189,7 @@ void StartTransmitPWM(void *argument)
 	  else {
 		  // todo: generiranje PWM
 	  }
-    osDelay(100);
+    osDelay(5);
   }
   /* USER CODE END StartTransmitPWM */
 }
@@ -1204,11 +1210,11 @@ void StartAltitudeMeasure(void *argument)
   {
     if (MODE == MODE_MOCK) {
     	while(!height_ready) {
-    		osDelay(100);
+    		osDelay(5);
     	}
     	autolander_newMeasurement(height_from_simul);
     	height_ready = 0;
-    	osDelay((int)HEIGHT_SAMPLING_INTE * 950);
+    	//osDelay((int)HEIGHT_SAMPLING_INTE * 950);
     } else {
     	// todo: ToF
     	osDelay((int)HEIGHT_SAMPLING_INTE * 1000);

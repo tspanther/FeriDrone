@@ -1,6 +1,7 @@
 import numpy
 import serial
 import struct
+from time import sleep
 
 FREQ = 50
 DURATION = 20
@@ -16,14 +17,15 @@ class AutoLander():
 
     def addHeightMeasurement(self, time, height):
         self.currentAltitude = height
+        sleep(0.035)
 
         # transmit usb
         height_bytes = struct.pack('<f', height)
         self.port.write(height_bytes)
 
         # receive usb
-        thrust = self.port.read(4)
-        self.currentThrust = struct.unpack('<f', thrust)[0]
+        #thrust = self.port.read(4)
+        #self.currentThrust = struct.unpack('<f', thrust)[0]
 
 
     @property
