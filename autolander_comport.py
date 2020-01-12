@@ -12,7 +12,7 @@ class AutoLander():
         self.currentAltitude = 0.0
         self.currentThrust = 0.0
 
-        self.port = serial.Serial(PORT, 9600, timeout=1, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
+        self.port = serial.Serial(PORT, 9600, timeout=100000, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
         
 
     def addHeightMeasurement(self, time, height):
@@ -24,8 +24,8 @@ class AutoLander():
         self.port.write(height_bytes)
 
         # receive usb
-        #thrust = self.port.read(4)
-        #self.currentThrust = struct.unpack('<f', thrust)[0]
+        thrust = self.port.read(4)
+        self.currentThrust = struct.unpack('<f', thrust)[0]
 
 
     @property

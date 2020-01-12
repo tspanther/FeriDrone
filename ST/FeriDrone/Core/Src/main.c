@@ -89,7 +89,7 @@ volatile float velocities[ROUGH_EST_SAMPLES_NUM];
 // schedule
 volatile uint8_t autolanderCommencing = 0;
 volatile uint8_t autolanderScheduleReady = 0;
-volatile uint8_t ts = 0;
+volatile uint16_t ts = 0;
 volatile uint16_t tsDecel = 0;
 volatile uint16_t tsStopDecel = 0;
 
@@ -97,6 +97,7 @@ volatile uint16_t tsStopDecel = 0;
 #define DRONE_MASS 0.5f
 #define G 9.81f
 #define OBJECT_MAX_THRUST 11.06f
+#define OBJECT_NEUTRAL_THRUST (DRONE_MASS * G)
 
 // PWM
 #define THROTTLE_CHANNEL 2
@@ -151,11 +152,13 @@ void initLSM303DLHC(void);
 void init_autolander(void) {
 	autolanderCommencing = 1;
 	autolanderScheduleReady = 0;
+	ts = 0;
 }
 
 void terminate_autolander(void) {
 	autolanderCommencing = 0;
 	autolanderScheduleReady = 0;
+	ts = 0;
 }
 
 uint8_t isAutolandRequested(uint32_t* PWM){
@@ -197,11 +200,14 @@ void autolander_compileSchedule(void){
 
 	tsStopDecel = (int)(tsDecel + decelTime / HEIGHT_SAMPLING_INTE) + 1;
 
+	autolanderScheduleReady = 1;
+
 	return;
 }
 
 void autolander_newMeasurement(float measurement){
 	if (!autolanderCommencing || autolanderScheduleReady) {
+		ts++;
 		return;
 	}
 
@@ -219,14 +225,13 @@ void autolander_newMeasurement(float measurement){
 	}
 
 	ts++;
-
 	return;
 }
 
 void addToWifiBuffer(float* data, uint8_t size, uint8_t* lastBufferIdx){
 	if (wifiBufferIdx > WIFI_BUFFER_SIZE - size - 1){
 		for (int i = 0; i < size; i++){
-			// overwrite previous measurement of this taks if buffer full
+			// overwrite previous measurement of this task if buffer full
 			wifiBuffer[i + *lastBufferIdx] = *(data + i);
 		}
 	} else {
@@ -1088,8 +1093,10 @@ void StartPilotiranje(void *argument)
 					} else if (ts < tsStopDecel) {
 						PWM[THROTTLE_CHANNEL] = PWM_HIGH;
 					} else {
-						PWM[THROTTLE_CHANNEL] = (int)(PWM_LOW + (float)(PWM_HIGH - PWM_LOW) * 0.45f);
+						PWM[THROTTLE_CHANNEL] = (int)(PWM_LOW + (float)(PWM_HIGH - PWM_LOW) * (OBJECT_NEUTRAL_THRUST * 0.95f / OBJECT_MAX_THRUST));
 					}
+				} else {
+					PWM[THROTTLE_CHANNEL] = PWM_LOW;
 				}
 
 				for (uint8_t i = 0; i < 8; i++) {
@@ -1169,21 +1176,21 @@ void StartTransmitPWM(void *argument)
 {
   /* USER CODE BEGIN StartTransmitPWM */
   /* Infinite loop */
-	uint8_t prev_ts = 0;
+	uint16_t prev_ts = 0xFFFF;
   for(;;)
   {
 	  if (MODE == MODE_MOCK) {
-		  if (prev_ts != ts && autolanderScheduleReady) {
+		  if (prev_ts != ts) {
 			  float rezultat[2];
 			  char b[] = { 0xaa, 0xad, 0xaa, 0xad };
 			  memcpy(&rezultat[0], &b, sizeof(float));
 
-			  float thrust = OBJECT_MAX_THRUST * ((PWM_generated[THROTTLE_CHANNEL] - PWM_LOW) / (PWM_HIGH - PWM_LOW));
+			  float thrust = (float)(PWM_generated[THROTTLE_CHANNEL] - PWM_LOW) / (float)(PWM_HIGH - PWM_LOW);
 			  rezultat[1] = thrust;
 
 			  CDC_Transmit_FS((uint8_t*) &rezultat[1], sizeof(float));
 
-			  prev_ts++;
+			  prev_ts = ts;
 		  }
 	  }
 	  else {

@@ -42,7 +42,7 @@ class GravitySim():
                  snr_dB=100.0,           # power of signal over noise
                  objectMass=0.5,        # kg
                  objectMaxThrust=11.06,  # F (force of engines)
-                 startHeight=1,         # meters (initial height)
+                 startHeight=2,         # meters (initial height)
                  startVelocity=0.0,       # meters / seconds (initial velocity)
                  startThrust=0):        # percentage of maxThrust (initial force)
 
