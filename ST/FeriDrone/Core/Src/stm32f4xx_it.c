@@ -46,8 +46,8 @@
 /* USER CODE BEGIN PV */
 extern uint32_t PWM_paket_ready[8];
 extern uint8_t PWM_paket_new;
-extern uint8_t PWM_operating;
 
+volatile uint8_t PWM_operating = 0;
 volatile uint32_t PWM_paket_buffer[8];
 volatile uint8_t PWM_write_idx = 0;
 /* USER CODE END PV */
@@ -68,33 +68,37 @@ void capturePWMPulse(void* htim1){
 	 * {L, R}_{LR, UD} == [800, 2050]
 	 */
 	uint32_t period = HAL_TIM_ReadCapturedValue(htim1, TIM_CHANNEL_2);
-	uint32_t pulse = HAL_TIM_ReadCapturedValue(htim1, TIM_CHANNEL_1);
+	uint32_t pulse  = HAL_TIM_ReadCapturedValue(htim1, TIM_CHANNEL_1);
 	if (!PWM_operating) {
 		if (pulse > 6000 && pulse < 14000) {
 			PWM_operating = 1;
-			PWM_write_idx = 0;
+			PWM_write_idx = 1;
 		}
 	} else {
 		if (PWM_write_idx == 0){
+			// expect long pulse
 			if (pulse < 6000 || pulse > 14000) {
 				PWM_operating = 0;
 				return;
 			}
+			PWM_write_idx++;
 		} else {
+			// expect data (short) pulse
 			if (pulse < 600 || pulse > 2400) {
 				PWM_operating = 0;
 				return;
 			}
-		}
-		PWM_paket_buffer[PWM_write_idx] = pulse;
-		PWM_write_idx++; PWM_write_idx %= 8;
 
-		if (PWM_write_idx == 0) {
-			for (uint8_t i = 0; i < 8; i++) {
-				// todo: samo menjaj kazalce
-				PWM_paket_ready[i] = PWM_paket_buffer[i];
+			PWM_paket_buffer[PWM_write_idx - 1] = pulse;
+			PWM_write_idx++; PWM_write_idx %= 9;
+
+			if (PWM_write_idx == 0) {
+				for (uint8_t i = 0; i < 8; i++) {
+					// todo: samo menjaj kazalce
+					PWM_paket_ready[i] = PWM_paket_buffer[i];
+				}
+				PWM_paket_new = 1;
 			}
-			PWM_paket_new = 1;
 		}
 	}
 }

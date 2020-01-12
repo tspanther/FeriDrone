@@ -106,7 +106,6 @@ uint16_t tsStopDecel = 0;
 #define PWM_PAUSE_HIGH 14000
 volatile uint32_t PWM_paket_new[8];
 volatile uint8_t PWM_paket_ready = 0;
-volatile uint8_t PWM_operating = 0;
 uint32_t PWM_generated[8];
 
 // wifi
@@ -1054,7 +1053,8 @@ void StartPilotiranje(void *argument)
 
 	if (MODE == MODE_MOCK) {
 		for (;;) {
-			if (PWM_paket_ready) {
+			if (0) {
+			//if (PWM_paket_ready) {
 				uint32_t PWM[8];
 
 				for (uint8_t i = 0; i < 8; i++) {
@@ -1087,7 +1087,7 @@ void StartPilotiranje(void *argument)
 
 				PWM_paket_ready = 0;
 			}
-			osDelay(5);
+			osDelay(100);
 		}
 	} else if (MODE == MODE_REAL) {
 		VL53L0X_Dev_t dev1;
@@ -1130,7 +1130,7 @@ void StartPosiljanjeWifi(void *argument)
 				if (wifiBufferIdx != 0) {
 					CompressBuffer();
 					if (!SILENT){
-						CDC_Transmit_FS((uint8_t*) &wifiBuffer, wifiBufferIdx * sizeof(float));
+						//CDC_Transmit_FS((uint8_t*) &wifiBuffer, wifiBufferIdx * sizeof(float));
 					}
 					wifiBufferIdx = 0;
 				}
@@ -1169,7 +1169,7 @@ void StartTransmitPWM(void *argument)
 			  float thrust = OBJECT_MAX_THRUST * ((PWM_generated[THROTTLE_IDX] - PWM_LOW) / (PWM_HIGH - PWM_LOW));
 			  rezultat[1] = thrust;
 
-			  CDC_Transmit_FS((uint8_t*) &rezultat[0], sizeof(float));
+			  CDC_Transmit_FS((uint8_t*) &rezultat[1], sizeof(float));
 
 			  prev_ts++;
 		  }
@@ -1177,7 +1177,7 @@ void StartTransmitPWM(void *argument)
 	  else {
 		  // todo: generiranje PWM
 	  }
-    osDelay(10);
+    osDelay(100);
   }
   /* USER CODE END StartTransmitPWM */
 }
@@ -1198,7 +1198,7 @@ void StartAltitudeMeasure(void *argument)
   {
     if (MODE == MODE_MOCK) {
     	while(!height_ready) {
-    		osDelay(1);
+    		osDelay(100);
     	}
     	autolander_newMeasurement(height_from_simul);
     	height_ready = 0;
