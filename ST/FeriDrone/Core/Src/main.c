@@ -99,7 +99,8 @@ uint16_t tsStopDecel = 0;
 #define OBJECT_MAX_THRUST 11.06f
 
 // PWM
-#define THROTTLE_IDX 2
+#define THROTTLE_CHANNEL 2
+#define AUTOLANDER_CHANNEL 5
 #define PWM_LOW 800
 #define PWM_HIGH 2050
 #define PWM_PAUSE_LOW 6000
@@ -158,8 +159,7 @@ void terminate_autolander(void) {
 }
 
 uint8_t isAutolandRequested(uint32_t* PWM){
-	// todo
-	return 1;
+	return *(PWM + AUTOLANDER_CHANNEL) > 1800;
 }
 
 void autolander_newMeasurement(float measurement){
@@ -174,6 +174,8 @@ void autolander_newMeasurement(float measurement){
 	}
 
 	heightSample_idx++;
+
+	return;
 }
 
 void autolander_compileSchedule(){
@@ -210,6 +212,8 @@ void autolander_compileSchedule(){
 	float decelTime = maxVelocity / a_d;
 
 	tsStopDecel = (int)(tsDecel + decelTime / HEIGHT_SAMPLING_INTE) + 1;
+
+	return;
 }
 
 void addToWifiBuffer(float* data, uint8_t size, uint8_t* lastBufferIdx){
@@ -225,6 +229,8 @@ void addToWifiBuffer(float* data, uint8_t size, uint8_t* lastBufferIdx){
 		*lastBufferIdx = wifiBufferIdx;
 		wifiBufferIdx += 4;
 	}
+
+	return;
 }
 
 void CompressBuffer(void) {
@@ -1053,8 +1059,8 @@ void StartPilotiranje(void *argument)
 
 	if (MODE == MODE_MOCK) {
 		for (;;) {
-			if (0) {
-			//if (PWM_paket_ready) {
+			//if (0) {
+			if (PWM_paket_ready) {
 				uint32_t PWM[8];
 
 				for (uint8_t i = 0; i < 8; i++) {
@@ -1071,11 +1077,11 @@ void StartPilotiranje(void *argument)
 
 				if (autolanderScheduleReady) {
 					if (ts < tsDecel) {
-						PWM[THROTTLE_IDX] = PWM_LOW;
+						PWM[THROTTLE_CHANNEL] = PWM_LOW;
 					} else if (ts < tsStopDecel) {
-						PWM[THROTTLE_IDX] = PWM_HIGH;
+						PWM[THROTTLE_CHANNEL] = PWM_HIGH;
 					} else {
-						PWM[THROTTLE_IDX] = (int)(PWM_LOW + (float)(PWM_HIGH - PWM_LOW) * 0.45f);
+						PWM[THROTTLE_CHANNEL] = (int)(PWM_LOW + (float)(PWM_HIGH - PWM_LOW) * 0.45f);
 					}
 					ts++;
 				}
@@ -1166,7 +1172,7 @@ void StartTransmitPWM(void *argument)
 			  char b[] = { 0xaa, 0xad, 0xaa, 0xad };
 			  memcpy(&rezultat[0], &b, sizeof(float));
 
-			  float thrust = OBJECT_MAX_THRUST * ((PWM_generated[THROTTLE_IDX] - PWM_LOW) / (PWM_HIGH - PWM_LOW));
+			  float thrust = OBJECT_MAX_THRUST * ((PWM_generated[THROTTLE_CHANNEL] - PWM_LOW) / (PWM_HIGH - PWM_LOW));
 			  rezultat[1] = thrust;
 
 			  CDC_Transmit_FS((uint8_t*) &rezultat[1], sizeof(float));

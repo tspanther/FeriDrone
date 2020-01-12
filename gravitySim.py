@@ -286,7 +286,7 @@ class GravitySim():
 
         plt.show()
 
-from autolander2 import AutoLander
+from autolander_comport import AutoLander
 
 if __name__ == '__main__':
     grav_sim = GravitySim(AutoLander,

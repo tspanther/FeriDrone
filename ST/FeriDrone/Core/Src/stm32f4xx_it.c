@@ -44,8 +44,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-extern uint32_t PWM_paket_ready[8];
-extern uint8_t PWM_paket_new;
+extern uint32_t PWM_paket_ready;
+extern uint32_t PWM_paket_new[8];
 
 volatile uint8_t PWM_operating = 0;
 volatile uint32_t PWM_paket_buffer[8];
@@ -95,9 +95,10 @@ void capturePWMPulse(void* htim1){
 			if (PWM_write_idx == 0) {
 				for (uint8_t i = 0; i < 8; i++) {
 					// todo: samo menjaj kazalce
-					PWM_paket_ready[i] = PWM_paket_buffer[i];
+					PWM_paket_new[i] = PWM_paket_buffer[i];
 				}
-				PWM_paket_new = 1;
+
+				PWM_paket_ready = 1;
 			}
 		}
 	}
