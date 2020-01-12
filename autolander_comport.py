@@ -17,7 +17,7 @@ class AutoLander():
 
     def addHeightMeasurement(self, time, height):
         self.currentAltitude = height
-        sleep(0.035)
+        #sleep(0.035)
 
         # transmit usb
         height_bytes = struct.pack('<f', height)

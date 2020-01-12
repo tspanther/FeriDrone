@@ -38,11 +38,11 @@ class GravitySim():
                  AutoLanderClass,
                  animate=False,         # animate the plots
                  timeDuration=3,       # seconds
-                 timeStep=0.0035,        # seconds
-                 snr_dB=100.0,           # power of signal over noise
+                 timeStep=0.035,        # seconds
+                 snr_dB=50.0,           # power of signal over noise
                  objectMass=0.5,        # kg
                  objectMaxThrust=11.06,  # F (force of engines)
-                 startHeight=2,         # meters (initial height)
+                 startHeight=3.0,         # meters (initial height)
                  startVelocity=0.0,       # meters / seconds (initial velocity)
                  startThrust=0):        # percentage of maxThrust (initial force)
 

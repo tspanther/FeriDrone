@@ -11,7 +11,7 @@ class AutoLander():
         Fg = self.objectNeutralThrust * self.objectMaxThrust
         self.g = Fg / self.objectMass
         
-        self.timeStep = 0.0035
+        self.timeStep = 0.035
 
         self.ts = 0 # time sample (index)
 
@@ -26,7 +26,7 @@ class AutoLander():
         self.altitudes_MA = None # moving average of altitudes
 
         # prepare velocity computation arrays
-        reactionTime = 0.3
+        reactionTime = 0.35
         self.roughEstimationSampleNum = int(reactionTime / self.timeStep / 2) # number of velocities we can afford to compute to estimate start velocity
         self.averageVelocities = numpy.zeros(self.roughEstimationSampleNum) # velocities on first few (overlapping) time intervals
         self.h_Altitudes = numpy.zeros(self.roughEstimationSampleNum)

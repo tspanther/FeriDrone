@@ -40,16 +40,29 @@
 /* USER CODE BEGIN PD */
 #define TOFS_devID 0x29
 
-// MOCK
 #define HELIX_FREQ 0.2f
 #define HELIX_WL 5.0f
 #define HELIX_STEP 1000
-#define SILENT 0
-#define MODE_MOCK 1
-#define MODE_REAL 0
-#define MODE MODE_MOCK
 
-#define WIFI_BUFFER_SIZE 64
+// MOCK
+#define MOCK_TRILATERATION 1
+#define MOCK_NAGIB 0
+#define MOCK_ALTITUDE 1
+#define MOCK_PWM_GEN 1
+
+#define SEND_TRILATERATION 1
+#define SEND_NAGIB 1
+#define SEND_ALTITUDE 1
+#define SEND_PWM_RAW 1
+#define SEND_PWM_GEN 1
+#define SEND_PWM_OUTGOING 1
+#define SEND_THRUST_AIRSIM 0
+
+#define COMM_USB 0
+#define COMM_WIFI 1
+#define COMM_MODE COMM_USB
+
+#define WIFI_BUFFER_SIZE 256
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -79,9 +92,10 @@ osSemaphoreId_t wifiBufferSemaphoreHandle;
 
 // AUTOLANDER
 // algorithm
-#define HEIGHT_SAMPLING_FREQ 285.0f
+#define HEIGHT_SAMPLING_FREQ 30.0f
 #define HEIGHT_SAMPLING_INTE (1.0f / HEIGHT_SAMPLING_FREQ)
-#define ROUGH_EST_SAMPLES_NUM 32
+#define TRILATERATION_SAMPLING_FREQ HEIGHT_SAMPLING_FREQ
+#define ROUGH_EST_SAMPLES_NUM 6 // ustreza reaction time-u nekje 0.35s
 volatile uint8_t heightSample_idx = 0;
 volatile float heightSamples[ROUGH_EST_SAMPLES_NUM];
 volatile float velocities[ROUGH_EST_SAMPLES_NUM];
@@ -100,6 +114,7 @@ volatile uint16_t tsStopDecel = 0;
 #define OBJECT_NEUTRAL_THRUST (DRONE_MASS * G)
 
 // PWM
+#define PWM_FREQ 50.0f
 #define THROTTLE_CHANNEL 2
 #define AUTOLANDER_CHANNEL 5
 #define PWM_LOW 800
@@ -109,6 +124,7 @@ volatile uint16_t tsStopDecel = 0;
 volatile uint32_t PWM_paket_new[8];
 volatile uint8_t PWM_paket_ready = 0;
 volatile uint32_t PWM_generated[8];
+volatile uint8_t PWM_generated_ready = 0;
 
 // wifi
 float wifiBuffer[WIFI_BUFFER_SIZE];
@@ -153,12 +169,14 @@ void init_autolander(void) {
 	autolanderCommencing = 1;
 	autolanderScheduleReady = 0;
 	ts = 0;
+	heightSample_idx = 0;
 }
 
 void terminate_autolander(void) {
 	autolanderCommencing = 0;
 	autolanderScheduleReady = 0;
 	ts = 0;
+	heightSample_idx = 0;
 }
 
 uint8_t isAutolandRequested(uint32_t* PWM){
@@ -229,17 +247,54 @@ void autolander_newMeasurement(float measurement){
 }
 
 void addToWifiBuffer(float* data, uint8_t size, uint8_t* lastBufferIdx){
+	uint8_t nil[4] = { 0x00, 0x00, 0x00, 0x00 };
+	float nil_f;
+	memcpy(&nil_f, &nil, sizeof(float));
 	if (wifiBufferIdx > WIFI_BUFFER_SIZE - size - 1){
 		for (int i = 0; i < size; i++){
 			// overwrite previous measurement of this task if buffer full
 			wifiBuffer[i + *lastBufferIdx] = *(data + i);
 		}
+		for (int i = size; i < 5; i++) {
+			wifiBuffer[i + *lastBufferIdx] = nil_f;
+		}
 	} else {
 		for (int i = 0; i < size; i++){
 			wifiBuffer[i + wifiBufferIdx] = *(data + i);
 		}
+		for (int i = size; i < 5; i++) {
+			wifiBuffer[i + *lastBufferIdx] = nil_f;
+		}
 		*lastBufferIdx = wifiBufferIdx;
-		wifiBufferIdx += 4;
+		wifiBufferIdx += 5;
+	}
+
+	return;
+}
+
+void addPWMToWifiBuffer(float* data, float header, uint8_t* lastBufferIdx){
+	if (wifiBufferIdx > WIFI_BUFFER_SIZE - (8 + 2) - 1){
+		wifiBuffer[*lastBufferIdx] = header;
+		for (int i = 0; i < 4; i++){
+			// overwrite previous measurement of this task if buffer full
+			wifiBuffer[i + *lastBufferIdx + 1] = *(data + i);
+		}
+		wifiBuffer[*lastBufferIdx + 5] = header;
+		for (int i = 4; i < 8; i++){
+			// overwrite previous measurement of this task if buffer full
+			wifiBuffer[i + *lastBufferIdx + 2] = *(data + i);
+		}
+	} else {
+		wifiBuffer[wifiBufferIdx] = header;
+		for (int i = 0; i < 4; i++){
+			wifiBuffer[i + wifiBufferIdx + 1] = *(data + i);
+		}
+		wifiBuffer[wifiBufferIdx + 5] = header;
+		for (int i = 4; i < 8; i++){
+			wifiBuffer[i + wifiBufferIdx + 2] = *(data + i);
+		}
+		*lastBufferIdx = wifiBufferIdx;
+		wifiBufferIdx += 10;
 	}
 
 	return;
@@ -924,7 +979,7 @@ void StartMerjenjeNagiba(void *argument)
 	memcpy(&rezultat[0], &b, sizeof(float));
 	uint8_t lastBufferIdx = 0;
 
-	if (MODE == MODE_MOCK) {
+	if (MOCK_NAGIB) {
 		// delay
 		float freq = HELIX_FREQ * HELIX_STEP;
 		float delay = 1000.0f / freq;
@@ -949,11 +1004,12 @@ void StartMerjenjeNagiba(void *argument)
 			rezultat[2] = pitch;
 			rezultat[3] = yaw;
 
-			//CDC_Transmit_FS((uint8_t*) &rezultat, 4 * sizeof(float));
-			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK){
-				addToWifiBuffer(rezultat, 4, &lastBufferIdx);
-				osSemaphoreRelease(wifiBufferSemaphoreHandle);
-				osDelay(ticksDelay);
+			if (SEND_NAGIB) {
+				if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK){
+					addToWifiBuffer(rezultat, 4, &lastBufferIdx);
+					osSemaphoreRelease(wifiBufferSemaphoreHandle);
+					osDelay(ticksDelay);
+				}
 			}
 
 			t += reverse * M_PI * 2 / freq;
@@ -961,7 +1017,7 @@ void StartMerjenjeNagiba(void *argument)
 				reverse *= -1;
 			}
 		}
-	} else if (MODE == MODE_REAL) {
+	} else {
 		// init
 		__HAL_SPI_ENABLE(&hspi1);
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
@@ -992,10 +1048,12 @@ void StartMerjenjeNagiba(void *argument)
 			rezultat[2] = pitch;
 			rezultat[3] = yaw;
 
-			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK){
-				addToWifiBuffer(rezultat, 4, &lastBufferIdx);
-				osSemaphoreRelease(wifiBufferSemaphoreHandle);
-				osDelay(ticksDelay);
+			if (SEND_NAGIB) {
+				if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK){
+					addToWifiBuffer(rezultat, 4, &lastBufferIdx);
+					osSemaphoreRelease(wifiBufferSemaphoreHandle);
+					osDelay(ticksDelay);
+				}
 			}
 		}
 	}
@@ -1018,7 +1076,7 @@ void StartTrilateracija(void *argument)
 	memcpy(&rezultat[0], &b, sizeof(float));
 	uint8_t lastBufferIdx = 0;
 
-	if (MODE == MODE_MOCK) {
+	if (MOCK_TRILATERATION) {
 		// delay
 		float freq = HELIX_FREQ * HELIX_STEP / 2;
 		float delay = 1000.0f / freq;
@@ -1038,10 +1096,12 @@ void StartTrilateracija(void *argument)
 			rezultat[2] = pos_y;
 			rezultat[3] = pos_z;
 
-			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK){
-				addToWifiBuffer(rezultat, 4, &lastBufferIdx);
-				osSemaphoreRelease(wifiBufferSemaphoreHandle);
-				osDelay(ticksDelay);
+			if (SEND_TRILATERATION) {
+				if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK){
+					addToWifiBuffer(rezultat, 4, &lastBufferIdx);
+					osSemaphoreRelease(wifiBufferSemaphoreHandle);
+					osDelay(ticksDelay);
+				}
 			}
 
 			t += reverse * M_PI * 2 / freq;
@@ -1049,7 +1109,7 @@ void StartTrilateracija(void *argument)
 				reverse *= -1;
 			}
 		}
-	} else if (MODE == MODE_REAL) {
+	} else {
 		for (;;) {
 			osDelay(100);
 		}
@@ -1068,60 +1128,65 @@ void StartTrilateracija(void *argument)
 void StartPilotiranje(void *argument)
 {
   /* USER CODE BEGIN StartPilotiranje */
+	uint8_t lastBufferIdx = 0;
 
-	if (MODE == MODE_MOCK) {
-		for (;;) {
-			//if (0) {
-			if (PWM_paket_ready) {
-				uint32_t PWM[8];
+	for (;;) {
+		if (PWM_paket_ready) {
+			uint32_t PWM[8];
 
-				for (uint8_t i = 0; i < 8; i++) {
-					// todo: samo menjaj kazalce
-					PWM[i] = PWM_paket_new[i];
-				}
-
-				uint8_t autolander = isAutolandRequested(&PWM[0]);
-				if (autolander && !autolanderCommencing) {
-					init_autolander();
-				} else if (!autolander && autolanderCommencing){
-					terminate_autolander();
-				}
-
-				if (autolanderScheduleReady) {
-					if (ts < tsDecel) {
-						PWM[THROTTLE_CHANNEL] = PWM_LOW;
-					} else if (ts < tsStopDecel) {
-						PWM[THROTTLE_CHANNEL] = PWM_HIGH;
-					} else {
-						PWM[THROTTLE_CHANNEL] = (int)(PWM_LOW + (float)(PWM_HIGH - PWM_LOW) * (OBJECT_NEUTRAL_THRUST * 0.95f / OBJECT_MAX_THRUST));
-					}
-				} else {
-					PWM[THROTTLE_CHANNEL] = PWM_LOW;
-				}
-
-				for (uint8_t i = 0; i < 8; i++) {
-					// todo: samo menjaj kazalce
-					PWM_generated[i] = PWM[i];
-				}
-
-				PWM_paket_ready = 0;
+			for (uint8_t i = 0; i < 8; i++) {
+				// todo: samo menjaj kazalce
+				PWM[i] = PWM_paket_new[i];
 			}
-			osDelay(5);
+
+			if (SEND_PWM_RAW) {
+				float header;
+				char b[] = { 0xaa, 0xae, 0xaa, 0xae };
+				memcpy(&header, &b, sizeof(float));
+				if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK){
+					addPWMToWifiBuffer((float*)&PWM[0], header, &lastBufferIdx);
+					osSemaphoreRelease(wifiBufferSemaphoreHandle);
+				}
+			}
+
+			uint8_t autolander = isAutolandRequested(&PWM[0]);
+			if (autolander && !autolanderCommencing) {
+				init_autolander();
+			} else if (!autolander && autolanderCommencing){
+				terminate_autolander();
+			}
+
+			if (autolanderScheduleReady) {
+				if (ts < tsDecel) {
+					PWM[THROTTLE_CHANNEL] = PWM_LOW;
+				} else if (ts < tsStopDecel) {
+					PWM[THROTTLE_CHANNEL] = PWM_HIGH;
+				} else {
+					PWM[THROTTLE_CHANNEL] = (int)(PWM_LOW + (float)(PWM_HIGH - PWM_LOW) * (OBJECT_NEUTRAL_THRUST * 0.90f / OBJECT_MAX_THRUST));
+				}
+			} else {
+				PWM[THROTTLE_CHANNEL] = PWM_LOW;
+			}
+
+			for (uint8_t i = 0; i < 8; i++) {
+				// todo: samo menjaj kazalce
+				PWM_generated[i] = PWM[i];
+				PWM_generated_ready = 1;
+			}
+
+			if (SEND_PWM_GEN) {
+				float header;
+				char b[] = { 0xaa, 0xaf, 0xaa, 0xaf };
+				memcpy(&header, &b, sizeof(float));
+				if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK){
+					addPWMToWifiBuffer((float*)&PWM_generated[0], header, &lastBufferIdx);
+					osSemaphoreRelease(wifiBufferSemaphoreHandle);
+				}
+			}
+
+			PWM_paket_ready = 0;
 		}
-	} else if (MODE == MODE_REAL) {
-		VL53L0X_Dev_t dev1;
-		dev1.I2cDevAddr = TOFS_devID;
-		dev1.comms_type = 1;
-		dev1.comms_speed_khz = 400;
-		dev1.hi2c = &hi2c3;
-		//dev1.hi2c = &hi2c3;
-		InitDevice(&dev1);
-		/* Infinite loop */
-		for (;;) {
-			uint8_t buffer[4];
-			VL53L0X_ReadMulti(&dev1, 0xC0, buffer + 1, 3);
-			osDelay(2000);
-		}
+		osDelay(1);
 	}
   /* USER CODE END StartPilotiranje */
 }
@@ -1137,27 +1202,31 @@ void StartPosiljanjeWifi(void *argument)
 {
   /* USER CODE BEGIN StartPosiljanjeWifi */
 	// delay
-	float floatsPerSec = HELIX_FREQ * HELIX_STEP * 4 + MADGWICK_FREQ * 4;
+	float floatsPerSec = 0.0f
+			+ SEND_ALTITUDE * HEIGHT_SAMPLING_FREQ * 5.0f
+			+ SEND_NAGIB * MADGWICK_FREQ * 5.0f
+			+ SEND_TRILATERATION * TRILATERATION_SAMPLING_FREQ * 5.0f
+			+ (SEND_PWM_GEN + SEND_PWM_RAW + SEND_PWM_OUTGOING) * PWM_FREQ * 10.0f
+			+ SEND_THRUST_AIRSIM * HEIGHT_SAMPLING_FREQ * 5.0f;
+
 	float freq = floatsPerSec / (WIFI_BUFFER_SIZE * 0.7f); // nekaj rezerve
 	float delay = 1000.0f / freq;
 	uint32_t ticksDelay = (uint32_t) (delay / 1);
 
   /* Infinite loop */
-	if (MODE == MODE_MOCK) {
+	if (COMM_MODE == COMM_USB) {
 		for (;;) {
 			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK) {
 				if (wifiBufferIdx != 0) {
 					CompressBuffer();
-					if (!SILENT){
-						//CDC_Transmit_FS((uint8_t*) &wifiBuffer, wifiBufferIdx * sizeof(float));
-					}
+					CDC_Transmit_FS((uint8_t*) &wifiBuffer, wifiBufferIdx * sizeof(float));
 					wifiBufferIdx = 0;
 				}
 				osSemaphoreRelease(wifiBufferSemaphoreHandle);
 				osDelay(ticksDelay);
 			}
 		}
-	} else if (MODE == MODE_REAL) {
+	} else if (COMM_MODE == COMM_WIFI) {
 		for (;;) {
 			// wifi
 		}
@@ -1172,33 +1241,52 @@ void StartPosiljanjeWifi(void *argument)
 * @retval None
 */
 /* USER CODE END Header_StartTransmitPWM */
-void StartTransmitPWM(void *argument)
-{
-  /* USER CODE BEGIN StartTransmitPWM */
-  /* Infinite loop */
+void StartTransmitPWM(void *argument) {
+	/* USER CODE BEGIN StartTransmitPWM */
+	/* Infinite loop */
 	uint16_t prev_ts = 0xFFFF;
-  for(;;)
-  {
-	  if (MODE == MODE_MOCK) {
-		  if (prev_ts != ts) {
-			  float rezultat[2];
-			  char b[] = { 0xaa, 0xad, 0xaa, 0xad };
-			  memcpy(&rezultat[0], &b, sizeof(float));
+	uint8_t lastBufferIdx = 0;
+	uint8_t ticksDelay = (uint8_t)((1.0f / PWM_FREQ) * 1000);
+	for (;;) {
+		if (PWM_generated_ready) {
+			if (MOCK_PWM_GEN) {
+				if (SEND_PWM_OUTGOING) {
+					float header;
+					char b[] = { 0xaa, 0xa0, 0xaa, 0xa0 };
+					memcpy(&header, &b, sizeof(float));
+					if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK) {
+						addPWMToWifiBuffer((float*)&PWM_generated[0], header, &lastBufferIdx);
+						osSemaphoreRelease(wifiBufferSemaphoreHandle);
+					}
+				}
 
-			  float thrust = (float)(PWM_generated[THROTTLE_CHANNEL] - PWM_LOW) / (float)(PWM_HIGH - PWM_LOW);
-			  rezultat[1] = thrust;
+				if (SEND_THRUST_AIRSIM) {
+					//if (1) {
+					if (prev_ts != ts) {
+						/*
+						float rezultat[2];
+						char b[] = { 0xaa, 0xa2, 0xaa, 0xa2 };
+						memcpy(&rezultat[0], &b, sizeof(float));
+						float thrust = (float) (PWM_generated[THROTTLE_CHANNEL] - PWM_LOW) / (float) (PWM_HIGH - PWM_LOW);
+						rezultat[1] = thrust;
 
-			  CDC_Transmit_FS((uint8_t*) &rezultat[1], sizeof(float));
+						addToWifiBuffer(&rezultat[0], 2, &lastBufferIdx);
+						*/
+						float thrust = (float) (PWM_generated[THROTTLE_CHANNEL] - PWM_LOW) / (float) (PWM_HIGH - PWM_LOW);
+						CDC_Transmit_FS((uint8_t*) &thrust, sizeof(float));
 
-			  prev_ts = ts;
-		  }
-	  }
-	  else {
-		  // todo: generiranje PWM
-	  }
-    osDelay(5);
-  }
-  /* USER CODE END StartTransmitPWM */
+						prev_ts = ts;
+					}
+				}
+			} else {
+				// todo: generiranje PWM
+			}
+
+			PWM_generated_ready = 0;
+		}
+		osDelay(1);
+	}
+	/* USER CODE END StartTransmitPWM */
 }
 
 /* USER CODE BEGIN Header_StartAltitudeMeasure */
@@ -1212,18 +1300,62 @@ void StartAltitudeMeasure(void *argument)
 {
   /* USER CODE BEGIN StartAltitudeMeasure */
   /* Infinite loop */
-
+	uint8_t lastBufferIdx = 0;
   for(;;)
   {
-    if (MODE == MODE_MOCK) {
+    if (MOCK_ALTITUDE) {
+    	// get height from usb cdc receive interrupt
     	while(!height_ready) {
-    		osDelay(5);
+    		osDelay(2);
     	}
+
+    	if (SEND_ALTITUDE){
+			float data[2];
+			char b[] = { 0xaa, 0xa1, 0xaa, 0xa1 };
+			memcpy(&data[0], &b, sizeof(float));
+			data[1] = height_from_simul;
+			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK) {
+				addToWifiBuffer(&data[0], 2, &lastBufferIdx);
+				osSemaphoreRelease(wifiBufferSemaphoreHandle);
+			}
+		}
+
     	autolander_newMeasurement(height_from_simul);
+
     	height_ready = 0;
-    	//osDelay((int)HEIGHT_SAMPLING_INTE * 950);
+
+    	//osDelay((int)(HEIGHT_SAMPLING_INTE * 950.0f));
     } else {
     	// todo: ToF
+    	/*
+    		 *
+    		 *
+    		else if (MODE == MODE_REAL) {
+    			VL53L0X_Dev_t dev1;
+    			dev1.I2cDevAddr = TOFS_devID;
+    			dev1.comms_type = 1;
+    			dev1.comms_speed_khz = 400;
+    			dev1.hi2c = &hi2c3;
+    			//dev1.hi2c = &hi2c3;
+    			InitDevice(&dev1);
+    			for (;;) {
+    				uint8_t buffer[4];
+    				VL53L0X_ReadMulti(&dev1, 0xC0, buffer + 1, 3);
+    				osDelay(2000);
+    			}
+    		}
+    		 */
+    	float heightFromToF = 0.0f;
+    	if (SEND_ALTITUDE){
+			float data[2];
+			char b[] = { 0xaa, 0xa1, 0xaa, 0xa1 };
+			memcpy(&data[0], &b, sizeof(float));
+			data[1] = heightFromToF;
+			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK) {
+				addToWifiBuffer(&data[0], 2, &lastBufferIdx);
+				osSemaphoreRelease(wifiBufferSemaphoreHandle);
+			}
+		}
     	osDelay((int)HEIGHT_SAMPLING_INTE * 1000);
     }
 
