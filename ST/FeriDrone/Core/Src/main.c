@@ -80,6 +80,7 @@ I2S_HandleTypeDef hi2s3;
 SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim1;
+TIM_HandleTypeDef htim2;
 
 osThreadId_t merjenjeNagibaHandle;
 osThreadId_t trilateracijaHandle;
@@ -145,6 +146,7 @@ static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_TIM2_Init(void);
 void StartMerjenjeNagiba(void *argument);
 void StartTrilateracija(void *argument);
 void StartPilotiranje(void *argument);
@@ -436,6 +438,7 @@ int main(void)
   MX_SPI1_Init();
   MX_I2C3_Init();
   MX_TIM1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
@@ -882,6 +885,58 @@ htim1.Instance = TIM1;
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_SlaveConfigTypeDef sSlaveConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 64;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 4294967295;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
+  sSlaveConfig.InputTrigger = TIM_TS_ITR0;
+  if (HAL_TIM_SlaveConfigSynchro(&htim2, &sSlaveConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -1228,7 +1283,7 @@ void StartPosiljanjeWifi(void *argument)
 		}
 	} else if (COMM_MODE == COMM_WIFI) {
 		for (;;) {
-			// wifi
+			// todo: wifi
 		}
 	}
   /* USER CODE END StartPosiljanjeWifi */
@@ -1241,12 +1296,13 @@ void StartPosiljanjeWifi(void *argument)
 * @retval None
 */
 /* USER CODE END Header_StartTransmitPWM */
-void StartTransmitPWM(void *argument) {
-	/* USER CODE BEGIN StartTransmitPWM */
+void StartTransmitPWM(void *argument)
+{
+  /* USER CODE BEGIN StartTransmitPWM */
 	/* Infinite loop */
 	uint16_t prev_ts = 0xFFFF;
 	uint8_t lastBufferIdx = 0;
-	uint8_t ticksDelay = (uint8_t)((1.0f / PWM_FREQ) * 1000);
+	//uint8_t ticksDelay = (uint8_t)((1.0f / PWM_FREQ) * 1000);
 	for (;;) {
 		if (PWM_generated_ready) {
 			if (MOCK_PWM_GEN) {
@@ -1280,13 +1336,14 @@ void StartTransmitPWM(void *argument) {
 				}
 			} else {
 				// todo: generiranje PWM
+
 			}
 
 			PWM_generated_ready = 0;
 		}
 		osDelay(1);
 	}
-	/* USER CODE END StartTransmitPWM */
+  /* USER CODE END StartTransmitPWM */
 }
 
 /* USER CODE BEGIN Header_StartAltitudeMeasure */
