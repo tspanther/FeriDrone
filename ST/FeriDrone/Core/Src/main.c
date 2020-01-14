@@ -48,7 +48,7 @@
 #define MOCK_TRILATERATION 1
 #define MOCK_NAGIB 0
 #define MOCK_ALTITUDE 1
-#define MOCK_PWM_GEN 1
+#define MOCK_PWM_GEN 0
 
 #define SEND_TRILATERATION 1
 #define SEND_NAGIB 1
@@ -80,7 +80,7 @@ I2S_HandleTypeDef hi2s3;
 SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim1;
-TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim3;
 
 osThreadId_t merjenjeNagibaHandle;
 osThreadId_t trilateracijaHandle;
@@ -122,10 +122,15 @@ volatile uint16_t tsStopDecel = 0;
 #define PWM_HIGH 2050
 #define PWM_PAUSE_LOW 6000
 #define PWM_PAUSE_HIGH 14000
+#define PWM_PACKET_LENGTH 25836
+#define PWM_PAUSE 517
+#define PWM_MS 1292
 volatile uint32_t PWM_paket_new[8];
 volatile uint8_t PWM_paket_ready = 0;
 volatile uint32_t PWM_generated[8];
 volatile uint8_t PWM_generated_ready = 0;
+volatile uint32_t delay[18];
+volatile uint8_t delay_idx = 0;
 
 // wifi
 float wifiBuffer[WIFI_BUFFER_SIZE];
@@ -146,7 +151,7 @@ static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_TIM1_Init(void);
-static void MX_TIM2_Init(void);
+static void MX_TIM3_Init(void);
 void StartMerjenjeNagiba(void *argument);
 void StartTrilateracija(void *argument);
 void StartPilotiranje(void *argument);
@@ -162,6 +167,7 @@ void initL3GD20(void);
 uint8_t i2c1_pisiRegister(uint8_t, uint8_t, uint8_t);
 void i2c1_beriRegistre(uint8_t, uint8_t, uint8_t*, uint8_t, uint8_t);
 void initLSM303DLHC(void);
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -438,11 +444,13 @@ int main(void)
   MX_SPI1_Init();
   MX_I2C3_Init();
   MX_TIM1_Init();
-  MX_TIM2_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
   __HAL_I2C_ENABLE(&hi2c3);
+  HAL_TIM_Base_Start(&htim3);
+  HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
   osKernelInitialize();
@@ -506,7 +514,7 @@ int main(void)
   /* definition and creation of transmitPWM */
   const osThreadAttr_t transmitPWM_attributes = {
     .name = "transmitPWM",
-    .priority = (osPriority_t) osPriorityNormal,
+    .priority = (osPriority_t) osPriorityHigh,
     .stack_size = 512
   };
   transmitPWMHandle = osThreadNew(StartTransmitPWM, NULL, &transmitPWM_attributes);
@@ -774,6 +782,8 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE BEGIN TIM1_Init 0 */
 	/*
+	 * todo: fix in gui so correct settings don't get overwritten on code generation
+	 *
 htim1.Instance = TIM1;
   htim1.Init.Prescaler = 64;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -885,54 +895,47 @@ htim1.Instance = TIM1;
 }
 
 /**
-  * @brief TIM2 Initialization Function
+  * @brief TIM3 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_TIM2_Init(void)
+static void MX_TIM3_Init(void)
 {
 
-  /* USER CODE BEGIN TIM2_Init 0 */
+  /* USER CODE BEGIN TIM3_Init 0 */
 
-  /* USER CODE END TIM2_Init 0 */
+  /* USER CODE END TIM3_Init 0 */
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
-  TIM_SlaveConfigTypeDef sSlaveConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
 
-  /* USER CODE BEGIN TIM2_Init 1 */
+  /* USER CODE BEGIN TIM3_Init 1 */
 
-  /* USER CODE END TIM2_Init 1 */
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 64;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 4294967295;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 64;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 1000;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
   {
     Error_Handler();
   }
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
-  sSlaveConfig.InputTrigger = TIM_TS_ITR0;
-  if (HAL_TIM_SlaveConfigSynchro(&htim2, &sSlaveConfig) != HAL_OK)
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
   {
     Error_Handler();
   }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN TIM2_Init 2 */
+  /* USER CODE BEGIN TIM3_Init 2 */
 
-  /* USER CODE END TIM2_Init 2 */
+  /* USER CODE END TIM3_Init 2 */
 
 }
 
@@ -962,6 +965,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin 
                           |Audio_RST_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : DATA_Ready_Pin */
   GPIO_InitStruct.Pin = DATA_Ready_Pin;
@@ -1009,6 +1015,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(OTG_FS_OverCurrent_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 
@@ -1300,46 +1313,105 @@ void StartTransmitPWM(void *argument)
 {
   /* USER CODE BEGIN StartTransmitPWM */
 	/* Infinite loop */
+	// MOCK
 	uint16_t prev_ts = 0xFFFF;
 	uint8_t lastBufferIdx = 0;
-	//uint8_t ticksDelay = (uint8_t)((1.0f / PWM_FREQ) * 1000);
+
+
+	// PWM
+	/*
+	 uint32_t pwm_prev_packet_start = 0;
+	 uint32_t start;
+	 uint32_t temp;
+	 uint32_t event[18];
+	 */
+	uint16_t PWM_total;
+	uint8_t first_iter = 1;
+
+	// pin to low
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
+
 	for (;;) {
-		if (PWM_generated_ready) {
+		if (1) {
+		//if (PWM_generated_ready) {
 			if (MOCK_PWM_GEN) {
 				if (SEND_PWM_OUTGOING) {
 					float header;
 					char b[] = { 0xaa, 0xa0, 0xaa, 0xa0 };
 					memcpy(&header, &b, sizeof(float));
 					if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK) {
-						addPWMToWifiBuffer((float*)&PWM_generated[0], header, &lastBufferIdx);
+						addPWMToWifiBuffer((float*) &PWM_generated[0], header, &lastBufferIdx);
 						osSemaphoreRelease(wifiBufferSemaphoreHandle);
 					}
 				}
 
 				if (SEND_THRUST_AIRSIM) {
-					//if (1) {
 					if (prev_ts != ts) {
-						/*
-						float rezultat[2];
-						char b[] = { 0xaa, 0xa2, 0xaa, 0xa2 };
-						memcpy(&rezultat[0], &b, sizeof(float));
-						float thrust = (float) (PWM_generated[THROTTLE_CHANNEL] - PWM_LOW) / (float) (PWM_HIGH - PWM_LOW);
-						rezultat[1] = thrust;
-
-						addToWifiBuffer(&rezultat[0], 2, &lastBufferIdx);
-						*/
 						float thrust = (float) (PWM_generated[THROTTLE_CHANNEL] - PWM_LOW) / (float) (PWM_HIGH - PWM_LOW);
 						CDC_Transmit_FS((uint8_t*) &thrust, sizeof(float));
 
 						prev_ts = ts;
 					}
 				}
+
+				PWM_generated_ready = 0;
 			} else {
-				// todo: generiranje PWM
+				/*
+				 temp = start = __HAL_TIM_GET_COUNTER(&htim2);
 
+				 if (!first_iter) {
+				 start += (PWM_PACKET_LENGTH - (start - pwm_prev_packet_start));
+				 pwm_prev_packet_start = temp;
+				 } else {
+				 first_iter = 0;
+				 __HAL_TIM_SET_AUTORELOAD(&htim2, delay[0]);
+				 }
+
+				 uint16_t PWM_demo[] = { 1421, 1421, 1421, 1421, 1421, 1421, 1421, 1421 };
+
+				 // sleep as much as possible
+				 osDelay((start - temp - 100) / PWM_MS);
+
+				 event[0] = start;
+				 event[1] = event[0] + PWM_PAUSE;
+				 for (uint8_t i = 1; i < 9; i++) {
+				 //event[i * 2] = event[i * 2 - 1] + PWM_generated[i - 1];
+				 event[i * 2] = event[i * 2 - 1] + PWM_demo[i - 1];
+				 event[i * 2 + 1] = event[i * 2] + PWM_PAUSE;
+				 }
+
+
+				 for (uint8_t i = 0; i < 18; i++){
+				 while(__HAL_TIM_GET_COUNTER(&htim2) < event[i]);
+				 //HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
+				 HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
+				 }
+				 */
+
+				//uint16_t PWM_demo[] = { 1421, 1421, 1421, 1421, 1421, 1421, 1421, 1421 };
+
+				//PWM_total = PWM_demo[0];
+				PWM_total = PWM_generated[0];
+				delay[0] = PWM_PAUSE;
+				//delay[1] = PWM_demo[0];
+				delay[1] = PWM_generated[0];
+				for (uint8_t i = 1; i < 8; i++) {
+					delay[i * 2] = PWM_PAUSE;
+					//delay[i * 2 + 1] = PWM_demo[i];
+					delay[i * 2 + 1] = PWM_generated[i];
+					//PWM_total += PWM_demo[i];
+					PWM_total += PWM_generated[i];
+				}
+				delay[16] = PWM_PAUSE;
+				delay[17] = PWM_PACKET_LENGTH - 9 * PWM_PAUSE - PWM_total;
+
+				 if (first_iter) {
+					 __HAL_TIM_SET_AUTORELOAD(&htim3, 1); // activate
+					 first_iter = 0;
+				 }
+
+				osDelay(10);
 			}
-
-			PWM_generated_ready = 0;
 		}
 		osDelay(1);
 	}
@@ -1431,7 +1503,12 @@ void StartAltitudeMeasure(void *argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-
+  if (htim->Instance == TIM3) {
+	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
+	__HAL_TIM_SET_AUTORELOAD(&htim3, delay[delay_idx]);
+	delay_idx++; delay_idx %= 18;
+	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
+  }
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM10) {
     HAL_IncTick();
