@@ -915,7 +915,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 64;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 1000;
+  htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
@@ -1224,16 +1224,18 @@ void StartPilotiranje(void *argument)
 				terminate_autolander();
 			}
 
-			if (autolanderScheduleReady) {
-				if (ts < tsDecel) {
-					PWM[THROTTLE_CHANNEL] = PWM_LOW;
-				} else if (ts < tsStopDecel) {
-					PWM[THROTTLE_CHANNEL] = PWM_HIGH;
+			if (autolanderCommencing) {
+				if (autolanderScheduleReady) {
+					if (ts < tsDecel) {
+						PWM[THROTTLE_CHANNEL] = PWM_LOW;
+					} else if (ts < tsStopDecel) {
+						PWM[THROTTLE_CHANNEL] = PWM_HIGH;
+					} else {
+						PWM[THROTTLE_CHANNEL] = (int)(PWM_LOW + (float)(PWM_HIGH - PWM_LOW) * (OBJECT_NEUTRAL_THRUST * 0.90f / OBJECT_MAX_THRUST));
+					}
 				} else {
-					PWM[THROTTLE_CHANNEL] = (int)(PWM_LOW + (float)(PWM_HIGH - PWM_LOW) * (OBJECT_NEUTRAL_THRUST * 0.90f / OBJECT_MAX_THRUST));
+					PWM[THROTTLE_CHANNEL] = PWM_LOW;
 				}
-			} else {
-				PWM[THROTTLE_CHANNEL] = PWM_LOW;
 			}
 
 			for (uint8_t i = 0; i < 8; i++) {
@@ -1504,8 +1506,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
   if (htim->Instance == TIM3) {
-	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-	__HAL_TIM_SET_AUTORELOAD(&htim3, delay[delay_idx]);
+	__HAL_TIM_SET_AUTORELOAD(&htim3, delay[delay_idx]); // set next delay (interleaved PWM_PAUSE and PWM_Pulse[i])
 	delay_idx++; delay_idx %= 18;
 	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
   }
