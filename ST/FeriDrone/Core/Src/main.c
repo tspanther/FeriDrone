@@ -54,9 +54,10 @@
 #define SEND_NAGIB 1
 #define SEND_ALTITUDE 1
 #define SEND_PWM_RAW 1
-#define SEND_PWM_GEN 1
+#define SEND_PWM_GEN 0
 #define SEND_PWM_OUTGOING 1
 #define SEND_THRUST_AIRSIM 0
+#define SEND_AUTOLANDER_DEBUG 1
 
 #define COMM_USB 0
 #define COMM_WIFI 1
@@ -173,6 +174,62 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+/*
+ * Packs data in 5 floats large packet and adds it to queue;
+ * Packet: [header * 1, values * (1-4), nil * (0-3)]
+ */
+void addToWifiBuffer(float* data, uint8_t size, uint8_t* lastBufferIdx){
+	uint8_t nil[4] = { 0x00, 0x00, 0x00, 0x00 };
+	float nil_f;
+	memcpy(&nil_f, &nil, sizeof(float));
+	if (wifiBufferIdx > WIFI_BUFFER_SIZE - size - 1){
+		for (int i = 0; i < size; i++){
+			// overwrite previous measurement of this task if buffer full
+			wifiBuffer[i + *lastBufferIdx] = *(data + i);
+		}
+		for (int i = size; i < 5; i++) {
+			wifiBuffer[i + *lastBufferIdx] = nil_f;
+		}
+	} else {
+		for (int i = 0; i < size; i++){
+			wifiBuffer[i + wifiBufferIdx] = *(data + i);
+		}
+		for (int i = size; i < 5; i++) {
+			wifiBuffer[i + *lastBufferIdx] = nil_f;
+		}
+		*lastBufferIdx = wifiBufferIdx;
+		wifiBufferIdx += 5;
+	}
+
+	return;
+}
+
+void addPWMToWifiBuffer(float* data, float header, uint8_t* lastBufferIdx){
+	if (wifiBufferIdx > WIFI_BUFFER_SIZE - (8 + 2) - 1){
+		wifiBuffer[*lastBufferIdx] = header;
+		for (int i = 0; i < 4; i++){
+			// overwrite previous measurement of this task if buffer full
+			wifiBuffer[i + *lastBufferIdx + 1] = *(data + i);
+		}
+		wifiBuffer[*lastBufferIdx + 5] = header;
+		for (int i = 4; i < 8; i++){
+			// overwrite previous measurement of this task if buffer full
+			wifiBuffer[i + *lastBufferIdx + 2] = *(data + i);
+		}
+	} else {
+		wifiBuffer[wifiBufferIdx] = header;
+		for (int i = 0; i < 4; i++){
+			wifiBuffer[i + wifiBufferIdx + 1] = *(data + i);
+		}
+		wifiBuffer[wifiBufferIdx + 5] = header;
+		for (int i = 4; i < 8; i++){
+			wifiBuffer[i + wifiBufferIdx + 2] = *(data + i);
+		}
+		*lastBufferIdx = wifiBufferIdx;
+		wifiBufferIdx += 10;
+	}
+}
+
 void init_autolander(void) {
 	autolanderCommencing = 1;
 	autolanderScheduleReady = 0;
@@ -228,6 +285,20 @@ void autolander_compileSchedule(void){
 
 	autolanderScheduleReady = 1;
 
+	if (SEND_AUTOLANDER_DEBUG) {
+		float header;
+		char b[] = { 0xaa, 0xa3, 0xaa, 0xa3 };
+		memcpy(&header, &b, sizeof(float));
+
+		float debug[5] = { header, sVel, sAlt, tsDecel, tsStopDecel };
+
+		if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK){
+			uint8_t idx = 0; // if necessary (buffer full), just overwrite data on idx 0 - nothing else is more important to send
+			addToWifiBuffer(debug, 5, &idx);
+			osSemaphoreRelease(wifiBufferSemaphoreHandle);
+		}
+	}
+
 	return;
 }
 
@@ -251,60 +322,6 @@ void autolander_newMeasurement(float measurement){
 	}
 
 	ts++;
-	return;
-}
-
-void addToWifiBuffer(float* data, uint8_t size, uint8_t* lastBufferIdx){
-	uint8_t nil[4] = { 0x00, 0x00, 0x00, 0x00 };
-	float nil_f;
-	memcpy(&nil_f, &nil, sizeof(float));
-	if (wifiBufferIdx > WIFI_BUFFER_SIZE - size - 1){
-		for (int i = 0; i < size; i++){
-			// overwrite previous measurement of this task if buffer full
-			wifiBuffer[i + *lastBufferIdx] = *(data + i);
-		}
-		for (int i = size; i < 5; i++) {
-			wifiBuffer[i + *lastBufferIdx] = nil_f;
-		}
-	} else {
-		for (int i = 0; i < size; i++){
-			wifiBuffer[i + wifiBufferIdx] = *(data + i);
-		}
-		for (int i = size; i < 5; i++) {
-			wifiBuffer[i + *lastBufferIdx] = nil_f;
-		}
-		*lastBufferIdx = wifiBufferIdx;
-		wifiBufferIdx += 5;
-	}
-
-	return;
-}
-
-void addPWMToWifiBuffer(float* data, float header, uint8_t* lastBufferIdx){
-	if (wifiBufferIdx > WIFI_BUFFER_SIZE - (8 + 2) - 1){
-		wifiBuffer[*lastBufferIdx] = header;
-		for (int i = 0; i < 4; i++){
-			// overwrite previous measurement of this task if buffer full
-			wifiBuffer[i + *lastBufferIdx + 1] = *(data + i);
-		}
-		wifiBuffer[*lastBufferIdx + 5] = header;
-		for (int i = 4; i < 8; i++){
-			// overwrite previous measurement of this task if buffer full
-			wifiBuffer[i + *lastBufferIdx + 2] = *(data + i);
-		}
-	} else {
-		wifiBuffer[wifiBufferIdx] = header;
-		for (int i = 0; i < 4; i++){
-			wifiBuffer[i + wifiBufferIdx + 1] = *(data + i);
-		}
-		wifiBuffer[wifiBufferIdx + 5] = header;
-		for (int i = 4; i < 8; i++){
-			wifiBuffer[i + wifiBufferIdx + 2] = *(data + i);
-		}
-		*lastBufferIdx = wifiBufferIdx;
-		wifiBufferIdx += 10;
-	}
-
 	return;
 }
 
@@ -1277,7 +1294,8 @@ void StartPosiljanjeWifi(void *argument)
 			+ SEND_NAGIB * MADGWICK_FREQ * 5.0f
 			+ SEND_TRILATERATION * TRILATERATION_SAMPLING_FREQ * 5.0f
 			+ (SEND_PWM_GEN + SEND_PWM_RAW + SEND_PWM_OUTGOING) * PWM_FREQ * 10.0f
-			+ SEND_THRUST_AIRSIM * HEIGHT_SAMPLING_FREQ * 5.0f;
+			+ SEND_THRUST_AIRSIM * HEIGHT_SAMPLING_FREQ * 5.0f
+			+ SEND_AUTOLANDER_DEBUG * 5.0f; // not sent each second, but important
 
 	float freq = floatsPerSec / (WIFI_BUFFER_SIZE * 0.7f); // nekaj rezerve
 	float delay = 1000.0f / freq;
@@ -1432,51 +1450,41 @@ void StartAltitudeMeasure(void *argument)
   /* USER CODE BEGIN StartAltitudeMeasure */
   /* Infinite loop */
 	uint8_t lastBufferIdx = 0;
+	float heightsMock[] = { 2.0f, 1.9997f, 1.9875f, 1.9633f, 1.9271f, 1.8788f, 1.8185f, 1.7462f, 1.6618f, 1.5655f, 1.4571f, 1.3367f };
   for(;;)
   {
     if (MOCK_ALTITUDE) {
     	// get height from usb cdc receive interrupt
+    	/*
+    	 * Height from simulation: tested, but keeping here
+    	 *
+    	 *
     	while(!height_ready) {
     		osDelay(2);
     	}
 
-    	if (SEND_ALTITUDE){
+    	autolander_newMeasurement(height_from_simul);
+
+    	height_ready = 0;
+    	*/
+
+    	if (SEND_ALTITUDE) {
 			float data[2];
 			char b[] = { 0xaa, 0xa1, 0xaa, 0xa1 };
 			memcpy(&data[0], &b, sizeof(float));
-			data[1] = height_from_simul;
+			data[1] = heightsMock[heightSample_idx % 12];
 			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK) {
 				addToWifiBuffer(&data[0], 2, &lastBufferIdx);
 				osSemaphoreRelease(wifiBufferSemaphoreHandle);
 			}
 		}
 
-    	autolander_newMeasurement(height_from_simul);
-
-    	height_ready = 0;
-
-    	//osDelay((int)(HEIGHT_SAMPLING_INTE * 950.0f));
+    	autolander_newMeasurement(heightsMock[heightSample_idx % 12]); // mod, only need 12 samples
+    	osDelay((int)(1000.0f * HEIGHT_SAMPLING_INTE)); // simulate wait for measurement
     } else {
-    	// todo: ToF
-    	/*
-    		 *
-    		 *
-    		else if (MODE == MODE_REAL) {
-    			VL53L0X_Dev_t dev1;
-    			dev1.I2cDevAddr = TOFS_devID;
-    			dev1.comms_type = 1;
-    			dev1.comms_speed_khz = 400;
-    			dev1.hi2c = &hi2c3;
-    			//dev1.hi2c = &hi2c3;
-    			InitDevice(&dev1);
-    			for (;;) {
-    				uint8_t buffer[4];
-    				VL53L0X_ReadMulti(&dev1, 0xC0, buffer + 1, 3);
-    				osDelay(2000);
-    			}
-    		}
-    		 */
+    	// todo: ToF from arduino
     	float heightFromToF = 0.0f;
+
     	if (SEND_ALTITUDE){
 			float data[2];
 			char b[] = { 0xaa, 0xa1, 0xaa, 0xa1 };
@@ -1487,7 +1495,8 @@ void StartAltitudeMeasure(void *argument)
 				osSemaphoreRelease(wifiBufferSemaphoreHandle);
 			}
 		}
-    	osDelay((int)HEIGHT_SAMPLING_INTE * 1000);
+
+    	//osDelay((int)HEIGHT_SAMPLING_INTE * 1000); // not needed, we will block wait / get interrupt from I2C
     }
 
   }
