@@ -260,3 +260,38 @@ Niko:
     - osvezevanje campPos, lookAt, upVec vektorjev na podlagi uporabnikovega vhoda (krmiljenja kamere)
     - preklop med nacinoma
 
+# Posiljanje podatkov s ploscice
+
+## Packets, headers
+
+AB - nagib, <f
+AC - trilateracija, f
+AE - PWM_RAW
+AF - PWM_GEN
+A0 - PWM_OUTGOING
+A1 - altitude
+A3 - autolander debug
+
+### PWM_{} packet
+
+2 packets with 4 4 byte unsigned little endian integers
+
+### Autolander debug
+
+```C
+float debug[5] = { header, sVel, sAlt, tsDecel, tsStopDecel };
+```
+
+## Parsing
+
+integer type
+
+```python
+val = int.from_bytes(bytes_, byteorder='little', signed=False)
+```
+
+float type
+
+```python
+val = struct.unpack('<f', bytes_)[0]
+```

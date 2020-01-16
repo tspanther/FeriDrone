@@ -54,8 +54,8 @@
 #define SEND_NAGIB 1
 #define SEND_ALTITUDE 1
 #define SEND_PWM_RAW 1
-#define SEND_PWM_GEN 0
-#define SEND_PWM_OUTGOING 1
+#define SEND_PWM_GEN 1
+#define SEND_PWM_OUTGOING 0
 #define SEND_THRUST_AIRSIM 0
 #define SEND_AUTOLANDER_DEBUG 1
 
@@ -1376,38 +1376,6 @@ void StartTransmitPWM(void *argument)
 
 				PWM_generated_ready = 0;
 			} else {
-				/*
-				 temp = start = __HAL_TIM_GET_COUNTER(&htim2);
-
-				 if (!first_iter) {
-				 start += (PWM_PACKET_LENGTH - (start - pwm_prev_packet_start));
-				 pwm_prev_packet_start = temp;
-				 } else {
-				 first_iter = 0;
-				 __HAL_TIM_SET_AUTORELOAD(&htim2, delay[0]);
-				 }
-
-				 uint16_t PWM_demo[] = { 1421, 1421, 1421, 1421, 1421, 1421, 1421, 1421 };
-
-				 // sleep as much as possible
-				 osDelay((start - temp - 100) / PWM_MS);
-
-				 event[0] = start;
-				 event[1] = event[0] + PWM_PAUSE;
-				 for (uint8_t i = 1; i < 9; i++) {
-				 //event[i * 2] = event[i * 2 - 1] + PWM_generated[i - 1];
-				 event[i * 2] = event[i * 2 - 1] + PWM_demo[i - 1];
-				 event[i * 2 + 1] = event[i * 2] + PWM_PAUSE;
-				 }
-
-
-				 for (uint8_t i = 0; i < 18; i++){
-				 while(__HAL_TIM_GET_COUNTER(&htim2) < event[i]);
-				 //HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
-				 HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
-				 }
-				 */
-
 				//uint16_t PWM_demo[] = { 1421, 1421, 1421, 1421, 1421, 1421, 1421, 1421 };
 
 				//PWM_total = PWM_demo[0];
