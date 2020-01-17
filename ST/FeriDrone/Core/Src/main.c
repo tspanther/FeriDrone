@@ -130,7 +130,7 @@ volatile uint32_t PWM_paket_new[8];
 volatile uint8_t PWM_paket_ready = 0;
 volatile uint32_t PWM_generated[8];
 volatile uint8_t PWM_generated_ready = 0;
-volatile uint32_t delay[18] = { 0 };
+volatile uint32_t delay[18];
 volatile uint8_t delay_idx = 0;
 
 // wifi
@@ -1359,9 +1359,6 @@ void StartTransmitPWM(void *argument)
 	uint8_t first_iter = 1;
 	uint8_t ticksDelay = 18; // 20 max, some slack
 
-	// pin to low
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
-
 	for (;;) {
 		uint32_t lastTick = osKernelGetTickCount();
 
@@ -1498,8 +1495,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
   if (htim->Instance == TIM3) {
 	__HAL_TIM_SET_AUTORELOAD(&htim3, delay[delay_idx]); // set next delay (interleaved PWM_PAUSE and PWM_Pulse[i])
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, delay_idx % 2);
 	delay_idx++; delay_idx %= 18;
-	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_4);
   }
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM10) {
