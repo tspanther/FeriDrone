@@ -44,11 +44,11 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-extern uint32_t PWM_paket_ready;
-extern uint32_t PWM_paket_new[8];
+extern uint8_t PWM_paket_ready;
+extern uint16_t PWM_paket_new[8];
 
 volatile uint8_t PWM_operating = 0;
-volatile uint32_t PWM_paket_buffer[8];
+volatile uint16_t PWM_paket_buffer[8];
 volatile uint8_t PWM_write_idx = 0;
 /* USER CODE END PV */
 
@@ -67,8 +67,8 @@ void capturePWMPulse(void* htim1){
 	 * MED_PAKETOMA == [8k 12k]
 	 * {L, R}_{LR, UD} == [800, 2050]
 	 */
-	uint32_t period = HAL_TIM_ReadCapturedValue(htim1, TIM_CHANNEL_2);
-	uint32_t pulse  = HAL_TIM_ReadCapturedValue(htim1, TIM_CHANNEL_1);
+	uint16_t period = HAL_TIM_ReadCapturedValue(htim1, TIM_CHANNEL_2);
+	uint16_t pulse  = HAL_TIM_ReadCapturedValue(htim1, TIM_CHANNEL_1);
 	if (!PWM_operating) {
 		if (pulse > 6000 && pulse < 14000) {
 			PWM_operating = 1;

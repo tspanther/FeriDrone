@@ -4,7 +4,7 @@ import os
 from timeit import default_timer as timer
 
 # send modes
-SEND_TRILATERATION = 1
+SEND_TRILATERATION = 0
 SEND_NAGIB = 1
 SEND_ALTITUDE = 1
 SEND_PWM_RAW = 1
@@ -14,7 +14,7 @@ SEND_AUTOLANDER_DEBUG = 1
 
 # freq
 FREQ_TRILATERATION = 30
-FREQ_NAGIB = 60
+FREQ_NAGIB = 50
 FREQ_ALTITUDE = 30
 FREQ_PWM = 50
 
@@ -29,12 +29,12 @@ headers = {
     'HEADER_AUTOLANDER_DEBUG': b'\xA3'
 }
 
-DURATION = 50
+DURATION = 30
 
 PORT = 'COM3'
-OTPT_FOLDER = 'drone_app'
+OTPT_FOLDER = 'drone_app2'
 
-freq= FREQ_TRILATERATION * SEND_TRILATERATION + FREQ_NAGIB * SEND_NAGIB + FREQ_ALTITUDE * SEND_ALTITUDE + FREQ_PWM * (SEND_PWM_GEN + SEND_PWM_OUTGOING + SEND_PWM_RAW) * 2
+freq= FREQ_TRILATERATION * SEND_TRILATERATION + FREQ_NAGIB * SEND_NAGIB + FREQ_ALTITUDE * SEND_ALTITUDE + FREQ_PWM * (SEND_PWM_GEN + SEND_PWM_OUTGOING + SEND_PWM_RAW)
 packet_size = 5 * 4
 packets_n = (freq * DURATION + SEND_AUTOLANDER_DEBUG)
 
@@ -79,19 +79,15 @@ for packet in packets:
     elif packet[1] == 171:
         NAGIB.append(parse.parse_floats(packet)[0:3])
     elif packet[1] == 175:
-        PWM_GEN.append(parse.parse_uint32s(packet))
+        PWM_GEN.append(parse.parse_uint16s(packet))
     elif packet[1] == 160:
-        PWM_OUTGOING.append(parse.parse_uint32s(packet))
+        PWM_OUTGOING.append(parse.parse_uint16s(packet))
     elif packet[1] == 174:
-        PWM_RAW.append(parse.parse_uint32s(packet))
+        PWM_RAW.append(parse.parse_uint16s(packet))
     elif packet[1] == 172:
         TRILATERATION.append(parse.parse_floats(packet)[0:3])
     else:
         print('invalid packet {}'.format(packet))
-
-PWM_GEN = parse.join_pwm(PWM_GEN)
-PWM_OUTGOING = parse.join_pwm(PWM_OUTGOING)
-PWM_RAW = parse.join_pwm(PWM_RAW)
 
 files = [
     [ TRILATERATION, 'TRILATERATION', 'idx,pos_x,pos_y,pos_z' ],
@@ -111,4 +107,7 @@ for file_ in files:
     with open('ST/python_demos/data/{}/{}.csv'.format(OTPT_FOLDER, file_[1]), 'w') as fd:
         fd.write('{}\n'.format(file_[2]))
         for i in range(len(file_[0])):
-            fd.write(str(i) + "," + ",".join(str(x) for x in file_[0][i]) + '\n')
+            try:
+                fd.write(str(i) + "," + ",".join(str(x) for x in file_[0][i]) + '\n')
+            except:
+                fd.write('{},{}\n'.format(i, file_[0][i]))

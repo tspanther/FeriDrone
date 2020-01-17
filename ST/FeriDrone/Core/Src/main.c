@@ -50,7 +50,7 @@
 #define MOCK_ALTITUDE 1
 #define MOCK_PWM_GEN 0
 
-#define SEND_TRILATERATION 1
+#define SEND_TRILATERATION 0
 #define SEND_NAGIB 1
 #define SEND_ALTITUDE 1
 #define SEND_PWM_RAW 1
@@ -126,11 +126,11 @@ volatile uint16_t tsStopDecel = 0;
 #define PWM_PACKET_LENGTH 25836
 #define PWM_PAUSE 517
 #define PWM_MS 1292
-volatile uint32_t PWM_paket_new[8];
+volatile uint16_t PWM_paket_new[8];
 volatile uint8_t PWM_paket_ready = 0;
-volatile uint32_t PWM_generated[8];
+volatile uint16_t PWM_generated[8];
 volatile uint8_t PWM_generated_ready = 0;
-volatile uint32_t delay[18];
+volatile uint16_t delay[18];
 volatile uint8_t delay_idx = 0;
 
 // wifi
@@ -204,29 +204,15 @@ void addToWifiBuffer(float* data, uint8_t size, uint8_t* lastBufferIdx){
 	return;
 }
 
-void addPWMToWifiBuffer(float* data, float header, uint8_t* lastBufferIdx){
-	if (wifiBufferIdx > WIFI_BUFFER_SIZE - (8 + 2) - 1){
-		wifiBuffer[*lastBufferIdx] = header;
-		for (int i = 0; i < 4; i++){
-			// overwrite previous measurement of this task if buffer full
-			wifiBuffer[i + *lastBufferIdx + 1] = *(data + i);
-		}
-		wifiBuffer[*lastBufferIdx + 5] = header;
-		for (int i = 4; i < 8; i++){
-			// overwrite previous measurement of this task if buffer full
-			wifiBuffer[i + *lastBufferIdx + 2] = *(data + i);
-		}
+void addPWMToWifiBuffer(uint16_t* data, float header, uint8_t* lastBufferIdx){
+	if (wifiBufferIdx > WIFI_BUFFER_SIZE - 5){
+		wifiBuffer[(*lastBufferIdx)] = header;
+		memcpy(&wifiBuffer[(*lastBufferIdx) + 1], data, 8 * sizeof(uint16_t));
 	} else {
 		wifiBuffer[wifiBufferIdx] = header;
-		for (int i = 0; i < 4; i++){
-			wifiBuffer[i + wifiBufferIdx + 1] = *(data + i);
-		}
-		wifiBuffer[wifiBufferIdx + 5] = header;
-		for (int i = 4; i < 8; i++){
-			wifiBuffer[i + wifiBufferIdx + 2] = *(data + i);
-		}
+		memcpy(&wifiBuffer[wifiBufferIdx + 1], data, 8 * sizeof(uint16_t));
 		*lastBufferIdx = wifiBufferIdx;
-		wifiBufferIdx += 10;
+		wifiBufferIdx += 5;
 	}
 }
 
@@ -244,7 +230,7 @@ void terminate_autolander(void) {
 	heightSample_idx = 0;
 }
 
-uint8_t isAutolandRequested(uint32_t* PWM){
+uint8_t isAutolandRequested(uint16_t* PWM){
 	return *(PWM + AUTOLANDER_CHANNEL) > 1800;
 }
 
@@ -1224,7 +1210,7 @@ void StartPilotiranje(void *argument)
 
 	for (;;) {
 		if (PWM_paket_ready) {
-			uint32_t PWM[8];
+			uint16_t PWM[8];
 
 			for (uint8_t i = 0; i < 8; i++) {
 				// todo: samo menjaj kazalce
@@ -1236,7 +1222,7 @@ void StartPilotiranje(void *argument)
 				char b[] = { 0xaa, 0xae, 0xaa, 0xae };
 				memcpy(&header, &b, sizeof(float));
 				if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK){
-					addPWMToWifiBuffer((float*)&PWM[0], header, &lastBufferIdx);
+					addPWMToWifiBuffer(&PWM[0], header, &lastBufferIdx);
 					osSemaphoreRelease(wifiBufferSemaphoreHandle);
 				}
 			}
@@ -1273,7 +1259,7 @@ void StartPilotiranje(void *argument)
 				char b[] = { 0xaa, 0xaf, 0xaa, 0xaf };
 				memcpy(&header, &b, sizeof(float));
 				if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK){
-					addPWMToWifiBuffer((float*)&PWM_generated[0], header, &lastBufferIdx);
+					addPWMToWifiBuffer(&PWM_generated[0], header, &lastBufferIdx);
 					osSemaphoreRelease(wifiBufferSemaphoreHandle);
 				}
 			}
@@ -1300,7 +1286,7 @@ void StartPosiljanjeWifi(void *argument)
 			+ SEND_ALTITUDE * HEIGHT_SAMPLING_FREQ * 5.0f
 			+ SEND_NAGIB * MADGWICK_FREQ * 5.0f
 			+ SEND_TRILATERATION * TRILATERATION_SAMPLING_FREQ * 5.0f
-			+ (SEND_PWM_GEN + SEND_PWM_RAW + SEND_PWM_OUTGOING) * PWM_FREQ * 10.0f
+			+ (SEND_PWM_GEN + SEND_PWM_RAW + SEND_PWM_OUTGOING) * PWM_FREQ * 5.0f
 			+ SEND_THRUST_AIRSIM * HEIGHT_SAMPLING_FREQ * 5.0f
 			+ SEND_AUTOLANDER_DEBUG * 5.0f; // not sent each second, but important
 
@@ -1370,7 +1356,7 @@ void StartTransmitPWM(void *argument)
 					char b[] = { 0xaa, 0xa0, 0xaa, 0xa0 };
 					memcpy(&header, &b, sizeof(float));
 					if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK) {
-						addPWMToWifiBuffer((float*) &PWM_generated[0], header, &lastBufferIdx);
+						addPWMToWifiBuffer(&PWM_generated[0], header, &lastBufferIdx);
 						osSemaphoreRelease(wifiBufferSemaphoreHandle);
 					}
 				}
