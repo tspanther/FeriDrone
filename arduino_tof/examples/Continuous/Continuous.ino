@@ -5,7 +5,7 @@ vl53l0x_ContinuousRanging_Example.c from the VL53L0X API.
 The range readings are in units of mm. */
 
 #include <Wire.h>
-#include <VL53L0X.h>
+#include "VL53L0X.h"
 
 VL53L0X sensor;
 int stevec = 0;
@@ -13,6 +13,9 @@ long int meritveAvg = 0;
 
 void setup()
 {
+  pinMode(13, OUTPUT); // PWM out
+  digitalWrite(13, HIGH);
+  
   Serial.begin(9600);
   Wire.begin();
 
@@ -21,30 +24,28 @@ void setup()
   {
     Serial.println("Failed to detect and initialize sensor!");
     while (1) {}
+  } else {
+    sensor.setSignalRateLimit(0.1);
+    sensor.setVcselPulsePeriod(VL53L0X::VcselPeriodPreRange,18);
+    sensor.setVcselPulsePeriod(VL53L0X::VcselPeriodFinalRange,14);
   }
 
-  // Start continuous back-to-back mode (take readings as
-  // fast as possible).  To use continuous timed mode
-  // instead, provide a desired inter-measurement period in
-  // ms (e.g. sensor.startContinuous(100)).
-  sensor.startContinuous();
-
-  
+  sensor.startContinuous(1);
 }
 
 void loop()
 {
-  Serial.print(sensor.readRangeContinuousMillimeters());
+  uint16_t measurement = sensor.readRangeContinuousMillimeters();
+  Serial.print(measurement);
   if (sensor.timeoutOccurred()) { Serial.print(" TIMEOUT"); }
 
-  /*if(stevec < 1000){
-    Serial.print(stevec);
-      Serial.println();
-      meritveAvg += (long int)sensor.readRangeContinuousMillimeters();
-      stevec++;
-   }else{
-      Serial.print((float)meritveAvg/1000);
-      Serial.println();
-    }*/
-    Serial.println();
+  
+  digitalWrite(13, LOW);
+  if (measurement > 2000) {
+    measurement = 2000;
+  }
+  delayMicroseconds(measurement);
+  digitalWrite(13, HIGH);
+
+  Serial.println();
 }
