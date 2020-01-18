@@ -47,7 +47,7 @@
 // MOCK
 #define MOCK_TRILATERATION 1
 #define MOCK_NAGIB 0
-#define MOCK_ALTITUDE 1
+#define MOCK_ALTITUDE 0
 #define MOCK_PWM_GEN 0
 
 #define SEND_TRILATERATION 0
@@ -82,6 +82,8 @@ SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
+
+UART_HandleTypeDef huart2;
 
 osThreadId_t merjenjeNagibaHandle;
 osThreadId_t trilateracijaHandle;
@@ -153,6 +155,7 @@ static void MX_SPI1_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART2_UART_Init(void);
 void StartMerjenjeNagiba(void *argument);
 void StartTrilateracija(void *argument);
 void StartPilotiranje(void *argument);
@@ -446,6 +449,7 @@ int main(void)
   MX_I2C3_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   /* init code for USB_DEVICE */
   MX_USB_DEVICE_Init();
@@ -941,6 +945,39 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -1401,6 +1438,24 @@ void StartTransmitPWM(void *argument)
 }
 
 /* USER CODE BEGIN Header_StartAltitudeMeasure */
+void sync(uint16_t interval){
+	// align
+	while(1) {
+		uint8_t a = 0xCC;
+		HAL_UART_Receive(&huart2, &a, sizeof(uint8_t), interval * 2);
+		if (a == 0xAA) {
+			HAL_UART_Receive(&huart2, &a, sizeof(uint8_t), interval * 2);
+			if (a == 0xAA){
+				HAL_UART_Receive(&huart2, &a, sizeof(uint8_t), interval * 2);
+				HAL_UART_Receive(&huart2, &a, sizeof(uint8_t), interval * 2);
+				break;
+			} else {
+				HAL_UART_Receive(&huart2, &a, sizeof(uint8_t), interval * 2);
+				break;
+			}
+		}
+	}
+}
 /**
 * @brief Function implementing the altitudeMeasure thread.
 * @param argument: Not used
@@ -1413,6 +1468,17 @@ void StartAltitudeMeasure(void *argument)
   /* Infinite loop */
 	uint8_t lastBufferIdx = 0;
 	float heightsMock[] = { 2.0f, 1.9997f, 1.9875f, 1.9633f, 1.9271f, 1.8788f, 1.8185f, 1.7462f, 1.6618f, 1.5655f, 1.4571f, 1.3367f };
+	uint16_t interval = (int)(1000.0f * HEIGHT_SAMPLING_INTE);
+	/*
+	uint16_t altitude;
+	uint16_t status;
+	uint16_t packet[2];
+	*/
+	uint8_t altitude;
+
+	// align
+	//sync(interval);
+
   for(;;)
   {
     if (MOCK_ALTITUDE) {
@@ -1448,7 +1514,24 @@ void StartAltitudeMeasure(void *argument)
     	osDelayUntil(start_tick + (int)(1000.0f * HEIGHT_SAMPLING_INTE));
     } else {
     	// todo: ToF from arduino
-    	float heightFromToF = 0.0f;
+    	/*
+    	HAL_UART_Receive(&huart2, &packet[0], 2 * sizeof(uint16_t), interval * 2);
+    	altitude = packet[1];
+    	status = packet[0];
+
+    	while (altitude > 2000) {
+    		sync(interval);
+        	HAL_UART_Receive(&huart2, &packet[0], 2 * sizeof(uint16_t), interval * 2);
+        	altitude = packet[1];
+        	status = packet[0];
+    	}
+    	*/
+
+    	HAL_UART_Receive(&huart2, &altitude, sizeof(uint8_t), interval);
+
+    	float heightFromToF = ((float)altitude) / 100.0f;
+
+    	autolander_newMeasurement(heightFromToF);
 
     	if (SEND_ALTITUDE){
 			float data[2];
@@ -1460,8 +1543,6 @@ void StartAltitudeMeasure(void *argument)
 				osSemaphoreRelease(wifiBufferSemaphoreHandle);
 			}
 		}
-
-    	//osDelay((int)HEIGHT_SAMPLING_INTE * 1000); // not needed, we will block wait / get interrupt from I2C
     }
 
   }

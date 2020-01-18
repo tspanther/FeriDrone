@@ -8,18 +8,17 @@ The range readings are in units of mm. */
 #include "VL53L0X.h"
 
 VL53L0X sensor;
-int stevec = 0;
-long int meritveAvg = 0;
+uint8_t led;
 
 void setup()
 {
-  pinMode(13, OUTPUT); // PWM out
-  digitalWrite(13, HIGH);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);
   
-  Serial.begin(9600);
+  Serial.begin(115200);
   Wire.begin();
 
-  sensor.setTimeout(500);
+  sensor.setTimeout(50);
   if (!sensor.init())
   {
     Serial.println("Failed to detect and initialize sensor!");
@@ -35,17 +34,20 @@ void setup()
 
 void loop()
 {
-  uint16_t measurement = sensor.readRangeContinuousMillimeters();
-  Serial.print(measurement);
-  if (sensor.timeoutOccurred()) { Serial.print(" TIMEOUT"); }
-
-  
-  digitalWrite(13, LOW);
-  if (measurement > 2000) {
-    measurement = 2000;
+  if (led == 0) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    led = 1;
+  } else {
+    digitalWrite(LED_BUILTIN, LOW);
+    led = 0;
   }
-  delayMicroseconds(measurement);
-  digitalWrite(13, HIGH);
-
-  Serial.println();
+  
+  uint16_t measur = sensor.readRangeContinuousMillimeters() / 10;
+  if (measur > 254) {
+    measur = 254;
+  }
+  uint8_t buf;
+  memcpy(&buf, &measur, sizeof(uint8_t));
+  if (sensor.timeoutOccurred()) { buf = 255; }
+  Serial.write(&buf, sizeof(uint8_t));
 }
