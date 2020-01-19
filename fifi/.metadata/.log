@@ -1,0 +1,46 @@
+!SESSION 2020-01-19 16:24:08.197 -----------------------------------------------
+eclipse.buildId=Version 1.1.0
+java.version=1.8.0_202
+java.vendor=AdoptOpenJdk
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Framework arguments:  C:\letnik_3\projekt\FeriDrone\fifi\Wifi_client\.cproject
+Command-line arguments:  -os win32 -ws win32 -arch x86_64 C:\letnik_3\projekt\FeriDrone\fifi\Wifi_client\.cproject
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2020-01-19 16:24:34.367
+!MESSAGE Log4j initialized with config file C:\letnik_3\projekt\FeriDrone\fifi\.metadata\.log4j.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2020-01-19 16:24:41.167
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY com.st.stm32cube.ide.mcu.toolchain 4 4 2020-01-19 16:24:42.027
+!MESSAGE Type or version is empty: ; 
+
+!ENTRY com.st.stm32cube.ide.mcu.toolchain 2 2 2020-01-19 16:24:42.052
+!MESSAGE Falling back to default toolchain
+
+!ENTRY com.st.stm32cube.ide.mcu.toolchain 4 4 2020-01-19 16:24:42.062
+!MESSAGE Type or version is empty: ; 
+
+!ENTRY com.st.stm32cube.ide.mcu.toolchain 2 2 2020-01-19 16:24:42.072
+!MESSAGE Falling back to default toolchain
+
+!ENTRY com.st.stm32cube.ide.mcu.toolchain 4 4 2020-01-19 16:24:42.082
+!MESSAGE Type or version is empty: ; 
+
+!ENTRY com.st.stm32cube.ide.mcu.toolchain 2 2 2020-01-19 16:24:42.092
+!MESSAGE Falling back to default toolchain
+
+!ENTRY com.st.stm32cube.ide.mcu.toolchain 4 4 2020-01-19 16:24:42.100
+!MESSAGE Type or version is empty: ; 
+
+!ENTRY com.st.stm32cube.ide.mcu.toolchain 2 2 2020-01-19 16:24:42.110
+!MESSAGE Falling back to default toolchain
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 4 4 2020-01-19 16:24:44.628
+!MESSAGE com.st.stm32cube.ide.mcu.ide/META-INF/version/build_ref file not found, build reference will not be reported into properties
+
+!ENTRY org.eclipse.cdt.core 1 0 2020-01-19 16:24:54.100
+!MESSAGE Indexed 'Wifi_client' (38 sources, 70 headers) in 11,2 sec: 8.522 declarations; 48.700 references; 19 unresolved inclusions; 342 syntax errors; 4.792 unresolved names (7,7%)
+
+!ENTRY org.eclipse.cdt.core 1 0 2020-01-19 16:25:09.922
+!MESSAGE Indexed 'Wifi_server' (38 sources, 70 headers) in 3,24 sec: 8.514 declarations; 48.451 references; 19 unresolved inclusions; 342 syntax errors; 4.771 unresolved names (7,7%)

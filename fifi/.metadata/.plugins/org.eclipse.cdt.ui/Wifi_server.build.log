@@ -1,0 +1,7 @@
+16:25:40 **** Clean-only build of configuration Debug for project Wifi_server ****
+make -j4 clean 
+rm -rf *
+ 
+
+16:25:40 Build Finished. 0 errors, 0 warnings. (took 835ms)
+
