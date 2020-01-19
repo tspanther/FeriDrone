@@ -101,8 +101,52 @@ void WidgetOpenGLDraw::initializeGL() {
     //glDisable(GL_CULL_FACE);
 
     objekti.push_back(new Object(gl,
-                                 "../DroneOpenGL/models/scena.obj",
-                                 "../DroneOpenGL/models/plain_grey.jpg",
+                                 "../DroneOpenGL/models/scene_rock1.obj",
+                                 "../DroneOpenGL/models/scene_rock1.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scene_rock2.obj",
+                                 "../DroneOpenGL/models/scene_rock2.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scene_rock2.obj",
+                                 "../DroneOpenGL/models/scene_rock2.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scene_rock3.obj",
+                                 "../DroneOpenGL/models/scene_rock3.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scena_ground.obj",
+                                 "../DroneOpenGL/models/scena_ground.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scene_leaves.obj",
+                                 "../DroneOpenGL/models/scene_leaves.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scene_brown.obj",
+                                 "../DroneOpenGL/models/scene_brown.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scene_darkgreen.obj",
+                                 "../DroneOpenGL/models/scene_darkgreen.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scene_lightgreen.obj",
+                                 "../DroneOpenGL/models/scene_lightgreen.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scene_leaves2.obj",
+                                 "../DroneOpenGL/models/scene_leaves2.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scene_rockyMountains.obj",
+                                 "../DroneOpenGL/models/scene_rockyMountains.jpg",
+                                 &light));
+    objekti.push_back(new Object(gl,
+                                 "../DroneOpenGL/models/scene_road.obj",
+                                 "../DroneOpenGL/models/color1.jpg",
                                  &light));
 
     dron = new drone(gl,
