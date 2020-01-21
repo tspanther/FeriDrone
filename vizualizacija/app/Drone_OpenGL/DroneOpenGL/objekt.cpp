@@ -54,36 +54,6 @@ Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char
     gl->glEnableVertexAttribArray(2);
 }
 
-Object::Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile) {
-    gl = gl_in;
-
-    pos = glm::vec3(0.0f, 0.0f, 0.0f);
-    roll = 0;
-    pitch = 0;
-    yaw = 0;
-
-    //light = light_in;
-
-    scale = 1.0;
-
-    loadObj(objFile, &data);
-    loadTexture(texFile, &tex_id);
-
-    gl->glGenVertexArrays(1, &VAO);
-    gl->glBindVertexArray(VAO);
-    gl->glGenBuffers(1, &VBO);
-    gl->glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    gl->glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
-
-    gl->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 0);
-    gl->glEnableVertexAttribArray(0);
-    gl->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    gl->glEnableVertexAttribArray(1);
-    gl->glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    gl->glEnableVertexAttribArray(2);
-}
-
-
 void Object::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::vec3 camPos) {
     glm::mat4 M = glm::mat4(1);
     M = glm::translate(M, pos); // object move

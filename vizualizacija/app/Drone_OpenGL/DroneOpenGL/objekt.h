@@ -10,7 +10,6 @@
 class Object {
 public:
     Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, Light* light);
-    Object(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile);
     ~Object();
 
     void draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::vec3 camPos);
