@@ -174,6 +174,7 @@ uint8_t i2c1_pisiRegister(uint8_t, uint8_t, uint8_t);
 void i2c1_beriRegistre(uint8_t, uint8_t, uint8_t*, uint8_t, uint8_t);
 void initLSM303DLHC(void);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
+void initEsp8622TcpClient(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -412,6 +413,41 @@ void initLSM303DLHC() {
 	i2c1_pisiRegister(0x19, 0x20, 0x57); // accel; 0101 speed (100hz), 0 low power enable (no), 111 enable axis xyz
 	i2c1_pisiRegister(0x19, 0x23, 0x88); // accel; 1(7); output registers not updated until MSB and LSB reading, 1(3); high resolution
 	i2c1_pisiRegister(0x3c, 0x00, 0x18); // magnet 75hz
+}
+
+
+// Start TCP client. Warning: server needs to be running prior to client launch.
+void initEsp8622TcpClient(){
+	  // Uart1 (PA15_TX ; PB7_RX)-> TCP server.
+	// Težava; busy p.. odgovor; idk;
+	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWMODE=1\r\n", 13, 1000); // 1 = ST.
+	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	  //CDC_Transmit_FS(prejetoSporocilo, 255);
+	  //memset(prejetoSporocilo, 0, 255);
+
+	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWLAP\r\n", 10, 1000); // Connect to router. Tega ne razumem najboljse.
+	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	  //CDC_Transmit_FS(prejetoSporocilo, 255);
+	  //memset(prejetoSporocilo, 0, 255);
+
+	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP?\r\n", 11, 1000); // Setup server with default port 333.
+	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	  CDC_Transmit_FS(prejetoSporocilo, 255);
+	  memset(prejetoSporocilo, 0, 255);
+
+	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP=\"server\",\"123456780\"\r\n", 33, 1000); // Connect to router. Tega ne razumem najboljse.
+	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	  //CDC_Transmit_FS(prejetoSporocilo, 255);
+	  //memset(prejetoSporocilo, 0, 255);
+
+	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPMUX=1\r\n", 13, 1000); // Set wifi mode: AP + ST.
+	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	  //memset(prejetoSporocilo, 0, 255);
+
+	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSTART=0,\"TCP\",\"192.168.4.1\",333\r\n", 39, 1000); // Set wifi mode: AP + ST.
+	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	  //CDC_Transmit_FS(prejetoSporocilo, 255);
+	  //memset(prejetoSporocilo, 0, 255);
 }
 /* USER CODE END 0 */
 
