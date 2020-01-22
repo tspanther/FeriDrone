@@ -26,14 +26,17 @@
      <x>0</x>
      <y>0</y>
      <width>541</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuTest">
     <property name="title">
-     <string>Test</string>
+     <string>Nastavitve</string>
     </property>
     <addaction name="actionTest"/>
+    <addaction name="actionFPS_pogled"/>
+    <addaction name="actionNalo_i_trajektorijo"/>
+    <addaction name="actionNalo_i_trajektorijo_2"/>
    </widget>
    <addaction name="menuTest"/>
   </widget>
@@ -48,7 +51,22 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionTest">
    <property name="text">
-    <string>&amp;Test</string>
+    <string>Menjaj projekcijo</string>
+   </property>
+  </action>
+  <action name="actionFPS_pogled">
+   <property name="text">
+    <string>FPS pogled</string>
+   </property>
+  </action>
+  <action name="actionNalo_i_trajektorijo">
+   <property name="text">
+    <string>3PS pogled</string>
+   </property>
+  </action>
+  <action name="actionNalo_i_trajektorijo_2">
+   <property name="text">
+    <string>Naloži trajektorijo</string>
    </property>
   </action>
  </widget>
