@@ -162,6 +162,7 @@ void StartPilotiranje(void *argument);
 void StartPosiljanjeWifi(void *argument);
 void StartTransmitPWM(void *argument);
 void StartAltitudeMeasure(void *argument);
+void StartWifiSender();
 
 /* USER CODE BEGIN PFP */
 uint8_t spi1_beriRegister(uint8_t);
