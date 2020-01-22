@@ -48,15 +48,17 @@ std::vector<float> novaTrikotnika = {
 };
 ```
 
-## Cilji do zakljucka
+### Modifikacija prikaza poti : Todo: Niko ... napiši nekaj za horizontalno trajektorijo(nagibe).
+
+
 
 ### Teksturiranje scene in drona
 
-Objekte teksturiramo v C++, vendar objekti samo nimajo podanih koordinat tekstur -> vedno je koordinata teksture v vsakem ogljiscu (u, v) = (0, 0).
+Objekte teksturiramo v C++, vendar objekti samo nimajo podanih koordinat tekstur -> vedno je koordinata teksture v vsakem oglišču (u, v) = (0, 0).
 
-Testna scena je trenutno en sam objekt - glede na implementacijo nalaganja obj datotek, nam bo najlazje sceno razcleniti na vec obj datotek (modifikacija v blenderju, izvoz) in naloziti vsak objekt s svojo teksturo posebej (nimamo logike za uporabo vec tekstur na razlicnih delih objekta).
+- Testno sceno smo razdelili na več delov in teksturirali dele, ki imajo enako teksturo. Pri nalaganju vsak objekt z pripadajočo sceno naložimo ločeno
 
-### Izboljsava 1st person kamere
+### Izboljšava 1st person kamere : TODO: Niko ... modify
 
 Kamera trenutno potuje za dronom, se pa ne rotira skupaj z njim.
 
@@ -74,24 +76,20 @@ lookAt = todo(pitch, yaw);
 camUp = todo(roll);
 ```
 
-### Sencenje
+### Senčenje
 
-Koda iz vaje 5...
+- Uporabili smo kodo iz vaje 5.
 
-#### Sence
+#### Sence ?
 
 https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 
-### Real-time branje podatkov iz toka, prikazovanje
+### Real-time branje podatkov iz toka, prikazovanje ?
 
 - Wifi vmesnik
 - filtriranje podatkov (low pass)
 
-### Trajektorija nagnjenosti - platojev - DONE: Niko
-
-'stripes 3d flight' 
-
-### Opcijsko: Igra
+### Opcijsko: Igra ; ?
 
 - fizikalni model
     - https://github.com/bulletphysics
@@ -100,7 +98,7 @@ https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 ...
 - dodatni ukazi zraven usmerjanja (streljanje, metanje bomb) - kodirani v preostalih kanalih
 
-### Menu - TODO: Štefan
+### Menu - TODO: Štefan ; Low-priority
 
 Uporabniski vmesnik za izbiro nacina delovanja aplikacije (preprost) 
 
@@ -114,8 +112,20 @@ Drugo:
 
 ### Razdelitev dela
 
-Implementacija FPS (aka. drone view), izdelava animacije, puščice smeri gibanja, izdelava osnove 3PS, izdelava prikaza nagiba - Niko
+Niko:
+- Implementacija FPS (aka. drone view)
+- Izdelava animacije
+- Puščisce smeri gibanja
+- Izdelava prikaza nagiba
+- Integracija senčenja
+- Razno ostalo delo
 
-Implementacija 3PS, izdelava osnovne trajektorije, nalaganje kompleksnih objektov - Štefan
+Štefan:
+- Implementacija 3PS
+- Izdelava osnovne trajektorije
+- OBJ nalaganje kompleksnejših objektov
+- Integracija tekstur
 
-Priprava osnovnih objetov (drone), teksturiranje in dodajanje podrobnosti objektom - Aljaž
+Aljaž:
+- Izdelava modela za prikaz (drone)
+- Teksturiranje scene
