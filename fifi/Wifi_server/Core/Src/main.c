@@ -121,7 +121,7 @@ int main(void)
   while (1)
   {
 	  // Debug delay.
-	  HAL_Delay(8000); // 8 s.
+	 // HAL_Delay(8000); // 8 s.
 
 	  if(!inicializacija){
 		  // Uart1 (PA15_TX ; PB7_RX)-> TCP server.
@@ -149,7 +149,7 @@ int main(void)
 	  }
 
 	  //HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSTATUS\r\n", 14, 1000); // Setup server with default port 333.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 500);
 	  CDC_Transmit_FS(prejetoSporocilo, 255);
 	  memset(prejetoSporocilo, 0, 255);
 

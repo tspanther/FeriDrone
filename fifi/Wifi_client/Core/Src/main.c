@@ -125,7 +125,7 @@ int main(void)
   while (1)
   {
 	  // Debug delay.
-	  HAL_Delay(8000); // 8 s.
+	  //HAL_Delay(8000); // 8 s.
 
 	  if(!inicializacija){
 
@@ -166,61 +166,16 @@ int main(void)
 		  inicializacija = 1;
 	  }
 
-	  HAL_Delay(20);
+	  //HAL_Delay(20);
 
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSEND=0,7\r\n", 16, 800); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 800);
+	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSEND=0,7\r\n", 16, 250); // Set wifi mode: AP + ST.
+	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 250);
 	  //CDC_Transmit_FS(prejetoSporocilo, 255);
 	  memset(prejetoSporocilo, 0, 255);
 
-	  HAL_UART_Transmit(&huart1, (uint8_t*)bufferToSend, 7, 800); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 800);
+	  HAL_UART_Transmit(&huart1, (uint8_t*)bufferToSend, 7, 250); // Set wifi mode: AP + ST.
+	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 250);
 	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
-
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSEND=0,7\r\n", 16, 800); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 800);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
-
-	  HAL_UART_Transmit(&huart1, (uint8_t*)bufferToSend, 7, 800); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 800);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
-
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSEND=0,7\r\n", 16, 800); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 800);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
-
-	  HAL_UART_Transmit(&huart1, (uint8_t*)bufferToSend, 7, 800); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 800);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
-
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSEND=0,7\r\n", 16, 800); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 800);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
-
-	  HAL_UART_Transmit(&huart1, (uint8_t*)bufferToSend, 7, 800); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 800);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
-
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSEND=0,7\r\n", 16, 800); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 800);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
-
-	  HAL_UART_Transmit(&huart1, (uint8_t*)bufferToSend, 7, 800); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 800);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
-
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPCLOSE=0\r\n", 15, 1000); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-	  CDC_Transmit_FS(prejetoSporocilo, 255);
 	  memset(prejetoSporocilo, 0, 255);
   }
   /* USER CODE END 3 */
