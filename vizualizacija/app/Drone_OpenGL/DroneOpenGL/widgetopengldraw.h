@@ -32,8 +32,9 @@ private:
     drone* dron;
 
     // cam
-    Camera thirdP;
-    Camera* firstP;
+    Camera thirdPCam;
+    Camera* lockedOnCam;
+    Camera* firstPCam;
     Camera* activeCam;
 
     // light
