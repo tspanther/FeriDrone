@@ -1,10 +1,10 @@
-17:56:54 **** Incremental Build of configuration Debug for project Wifi_client ****
+09:22:28 **** Incremental Build of configuration Debug for project Wifi_client ****
 make -j4 all 
 arm-none-eabi-size   Wifi_client.elf 
    text	   data	    bss	    dec	    hex	filename
-  33568	    488	   8344	  42400	   a5a0	Wifi_client.elf
+  33712	    488	   8344	  42544	   a630	Wifi_client.elf
 Finished building: default.size.stdout
  
 
-17:56:57 Build Finished. 0 errors, 0 warnings. (took 2s.805ms)
+09:22:29 Build Finished. 0 errors, 0 warnings. (took 1s.598ms)
 

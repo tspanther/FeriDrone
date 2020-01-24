@@ -132,13 +132,13 @@ int main(void)
 		  // Uart1 (PA15_TX ; PB7_RX)-> TCP server.
 		  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWMODE=1\r\n", 13, 1000); // 1 = ST.
 		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-		  //CDC_Transmit_FS(prejetoSporocilo, 255);
-		  //memset(prejetoSporocilo, 0, 255);
+		  CDC_Transmit_FS(prejetoSporocilo, 255);
+		  memset(prejetoSporocilo, 0, 255);
 
 		  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWLAP\r\n", 10, 1000); // Connect to router. Tega ne razumem najboljse.
 		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-		  //CDC_Transmit_FS(prejetoSporocilo, 255);
-		  //memset(prejetoSporocilo, 0, 255);
+		  CDC_Transmit_FS(prejetoSporocilo, 255);
+		  memset(prejetoSporocilo, 0, 255);
 
 		  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP?\r\n", 11, 1000); // Setup server with default port 333.
 		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
@@ -147,17 +147,17 @@ int main(void)
 
 		  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP=\"server\",\"123456780\"\r\n", 33, 1000); // Connect to router. Tega ne razumem najboljse.
 		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-		  //CDC_Transmit_FS(prejetoSporocilo, 255);
-		  //memset(prejetoSporocilo, 0, 255);
+		  CDC_Transmit_FS(prejetoSporocilo, 255);
+		  memset(prejetoSporocilo, 0, 255);
 
 		  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPMUX=1\r\n", 13, 1000); // Set wifi mode: AP + ST.
 		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-		  //memset(prejetoSporocilo, 0, 255);
+		  memset(prejetoSporocilo, 0, 255);
 
 		  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSTART=0,\"TCP\",\"192.168.4.1\",333\r\n", 39, 1000); // Set wifi mode: AP + ST.
 		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-		  //CDC_Transmit_FS(prejetoSporocilo, 255);
-		  //memset(prejetoSporocilo, 0, 255);
+		  CDC_Transmit_FS(prejetoSporocilo, 255);
+		  memset(prejetoSporocilo, 0, 255);
 
 		 /* HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPCLOSE=2\r\n", 15, 1000); // Set wifi mode: AP + ST.
 		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
@@ -171,12 +171,12 @@ int main(void)
 
 	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSEND=0,7\r\n", 16, 250); // Set wifi mode: AP + ST.
 	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 250);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
+	  CDC_Transmit_FS(prejetoSporocilo, 255);
 	  memset(prejetoSporocilo, 0, 255);
 
 	  HAL_UART_Transmit(&huart1, (uint8_t*)bufferToSend, 7, 250); // Set wifi mode: AP + ST.
 	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 250);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
+	  CDC_Transmit_FS(prejetoSporocilo, 255);
 	  memset(prejetoSporocilo, 0, 255);
   }
   /* USER CODE END 3 */

@@ -1,7 +1,7 @@
 LaunchTargetManager/org.eclipse.launchbar.core.launchTargetType.local,Local/arch=x86_64
 LaunchTargetManager/org.eclipse.launchbar.core.launchTargetType.local,Local/name=Local
 LaunchTargetManager/org.eclipse.launchbar.core.launchTargetType.local,Local/os=win32
-configDescList=org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:wifi_kom Debug,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:FeriDrone Debug,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Wifi_server Debug,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Wifi_client Debug
+configDescList=org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:wifi_kom Debug,org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:FeriDrone Debug
 eclipse.preferences.version=1
 org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Wifi_client\ Debug/activeLaunchMode=debug
 org.eclipse.cdt.dsf.gdb.gdbRemotedescriptorType\:Wifi_client\ Debug/activeLaunchTarget=null\:---

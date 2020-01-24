@@ -1,4 +1,4 @@
-17:49:54 **** Incremental Build of configuration Debug for project Wifi_server ****
+09:21:24 **** Incremental Build of configuration Debug for project Wifi_server ****
 make -j4 all 
 arm-none-eabi-size   Wifi_server.elf 
    text	   data	    bss	    dec	    hex	filename
@@ -6,5 +6,5 @@ arm-none-eabi-size   Wifi_server.elf
 Finished building: default.size.stdout
  
 
-17:49:56 Build Finished. 0 errors, 0 warnings. (took 1s.260ms)
+09:21:25 Build Finished. 0 errors, 0 warnings. (took 1s.282ms)
 
