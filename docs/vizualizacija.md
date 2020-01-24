@@ -36,7 +36,7 @@ Izris objekta je mogoc z metodo `draw`.
 - vrsta predhodnjih polozajev in nagibov (za izris trajektorije in vektorja hitrosti/gibanja)
 - `Camera` - 1st Person
 
-`Drone` kot premicen objekt v sceni uvede metodi `moveTo` in `tiltTo`, ki offline in real-time premikanje.
+`Drone` kot premicen objekt v sceni uvede metodi `moveTo` in `tiltTo`, ki sta primerni za offline in real-time premikanje.
 
 ### Camera
 
