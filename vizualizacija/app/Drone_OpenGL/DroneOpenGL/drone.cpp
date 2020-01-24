@@ -180,6 +180,13 @@ void drone::clearTraj(void){
 void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::vec3 camPos) {
     Object::draw(P, V, id_shader_program, camPos);
 
+    // disable shading
+    glm::vec3 one = 10.0f*glm::vec3(0.1f, 0.1f, 0.1f);
+    glm::vec3 nul = 0.0f*glm::vec3(0.1f, 0.1f, 0.1f);
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Ra"), 1, glm::value_ptr(one));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Rd"), 1, glm::value_ptr(nul));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Rs"), 1, glm::value_ptr(nul));
+
     // trajectory
     gl->glBindVertexArray(VAO_traj);
     gl->glBindTexture(GL_TEXTURE_2D, tex_id_traj);
