@@ -10,9 +10,9 @@ public:
     Camera();
     ~Camera();
 
-    glm::vec3 camPos;
+    glm::vec3 pos;
     glm::vec3 lookAt;
-    glm::vec3 camUp;
+    glm::vec3 upVec;
     float pitch;
     float yaw;
     float roll;

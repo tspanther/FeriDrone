@@ -15,7 +15,7 @@
 
 WidgetOpenGLDraw::WidgetOpenGLDraw(QWidget *parent) : QOpenGLWidget(parent) {
     QWidget::setFocusPolicy(Qt::StrongFocus);
-    activeCam = &thirdP;
+    activeCam = &thirdPCam;
     setMouseTracking(true);
 }
 
@@ -158,7 +158,9 @@ void WidgetOpenGLDraw::initializeGL() {
                      "../DroneOpenGL/models/purple.png",
                      "../DroneOpenGL/models/yellowblue.png",
                      &light);
-    firstP = &dron->cam;
+
+    lockedOnCam = &dron->lockedOnCam;
+    firstPCam = &dron->firstPCam;
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {
@@ -182,13 +184,13 @@ void WidgetOpenGLDraw::paintGL() {
     gl->glUseProgram(id_shader_program);
 
     glm::mat4 P = createProjectionMatrix();
-    auto camPosZoomed = activeCam->camPos + float(activeCam->zoom) * glm::normalize(activeCam->lookAt);
-    glm::mat4 V = glm::lookAt(camPosZoomed, activeCam->lookAt + activeCam->camPos, activeCam->camUp);
+    auto camPosZoomed = activeCam->pos + float(activeCam->zoom) * glm::normalize(activeCam->lookAt);
+    glm::mat4 V = glm::lookAt(camPosZoomed, activeCam->lookAt + activeCam->pos, activeCam->upVec);
 
     for (unsigned int i = 0; i < objekti.size(); i++){
-        objekti[i]->draw(P, V, id_shader_program, activeCam->camPos);
+        objekti[i]->draw(P, V, id_shader_program, activeCam->pos);
     }
-    dron->draw(P, V, id_shader_program, activeCam->camPos);
+    dron->draw(P, V, id_shader_program, activeCam->pos);
 
     const unsigned int err = gl->glGetError();
 	if (err != 0) {
@@ -237,32 +239,34 @@ void WidgetOpenGLDraw::loadAnimation(){
 void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
     makeCurrent();
 
-    glm::vec3 projLookAt = glm::vec3(thirdP.lookAt.x, 0.0f, thirdP.lookAt.z);
-    glm::vec3 projLookAtFlip = glm::vec3(thirdP.lookAt.z, 0.0f, thirdP.lookAt.x);
+    glm::vec3 projLookAt = glm::vec3(thirdPCam.lookAt.x, 0.0f, thirdPCam.lookAt.z);
+    glm::vec3 projLookAtFlip = glm::vec3(thirdPCam.lookAt.z, 0.0f, thirdPCam.lookAt.x);
     float speed = 0.02f; // param
 
     switch(event->key()) {
         case Qt::Key::Key_W:
-            thirdP.camPos += speed * glm::normalize(projLookAt);
+            thirdPCam.pos += speed * glm::normalize(projLookAt);
             break;
         case Qt::Key::Key_A:
-            thirdP.camPos += speed * glm::normalize(projLookAtFlip);
+            thirdPCam.pos += speed * glm::normalize(projLookAtFlip);
             break;
         case Qt::Key::Key_S:
-            thirdP.camPos -= speed * glm::normalize(projLookAt);
+            thirdPCam.pos -= speed * glm::normalize(projLookAt);
             break;
         case Qt::Key::Key_D:
-            thirdP.camPos -= speed * glm::normalize(projLookAtFlip);
+            thirdPCam.pos -= speed * glm::normalize(projLookAtFlip);
             break;
         case Qt::Key::Key_1:
-            thirdP.setDefaults();
+            thirdPCam.setDefaults();
             dron->clearTraj();
             break;
         case Qt::Key::Key_Tab:
-            if (activeCam == &thirdP) {
-                activeCam = firstP;
+            if (activeCam == &thirdPCam) {
+                activeCam = firstPCam;
+            } else if (activeCam == firstPCam) {
+                activeCam = lockedOnCam;
             } else {
-                activeCam = &thirdP;
+                activeCam = &thirdPCam;
             }
             break;
         case Qt::Key::Key_2:
@@ -297,7 +301,7 @@ void WidgetOpenGLDraw::keyPressEvent(QKeyEvent *event){
             sign*=(-1);
             break;
         case Qt::Key::Key_Escape:
-            thirdP.lockToThirdPersonCamera = false;
+            thirdPCam.lockToThirdPersonCamera = false;
             QWidget::setCursor(Qt::ArrowCursor);
             break;
     }
@@ -310,7 +314,7 @@ void WidgetOpenGLDraw::wheelEvent(QWheelEvent *event){
 
     double speed = 1.0;
 
-    if (activeCam == firstP){
+    if (activeCam == firstPCam){
         return;
     }
 
@@ -330,7 +334,7 @@ void WidgetOpenGLDraw::mousePressEvent(QMouseEvent *event){
 void WidgetOpenGLDraw::mouseReleaseEvent(QMouseEvent *event){
     makeCurrent();
 
-    thirdP.lockToThirdPersonCamera = true;
+    thirdPCam.lockToThirdPersonCamera = true;
     QWidget::setCursor(Qt::BlankCursor);
 
     update();
@@ -339,12 +343,12 @@ void WidgetOpenGLDraw::mouseReleaseEvent(QMouseEvent *event){
 void WidgetOpenGLDraw::mouseMoveEvent(QMouseEvent *event){
     makeCurrent();
 
-    if(thirdP.lockToThirdPersonCamera){
+    if(thirdPCam.lockToThirdPersonCamera){
         double sensitivity = 0.004;
 
-        thirdP.yaw += float(sensitivity * (event->x() - current.x()));
-        thirdP.pitch += float(sensitivity * (-(event->y() - current.y())));
-        thirdP.updateLookAt();
+        thirdPCam.yaw += float(sensitivity * (event->x() - current.x()));
+        thirdPCam.pitch += float(sensitivity * (-(event->y() - current.y())));
+        thirdPCam.updateLookAt();
 
         QPoint glob = mapToGlobal(QPoint(width()/2,height()/2));
         QCursor::setPos(glob);
