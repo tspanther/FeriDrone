@@ -63,7 +63,7 @@
 #define COMM_WIFI 1
 #define COMM_MODE COMM_WIFI
 
-#define WIFI_BUFFER_SIZE 256
+#define WIFI_BUFFER_SIZE 128
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -434,15 +434,18 @@ void initEsp8622TcpClient(){
 	/*CDC_Transmit_FS(prejetoSporocilo, 255);
 	memset(prejetoSporocilo, 0, 255);*/
 
+	/*
 	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWLAP\r\n", 10, 1000); // Lists available APs.
 	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
 	/*CDC_Transmit_FS(prejetoSporocilo, 255);
 	memset(prejetoSporocilo, 0, 255);*/
 
+
 	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP=\"server\",\"123456780\"\r\n", 33, 1000); // Connect to designated AP.
 	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
 	/*CDC_Transmit_FS(prejetoSporocilo, 255);
 	memset(prejetoSporocilo, 0, 255);*/
+
 
 	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP?\r\n", 11, 1000); // Query APs info.
 	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
@@ -1167,6 +1170,8 @@ void StartMerjenjeNagiba(void *argument)
 	char b[] = { 0xaa, 0xab, 0xaa, 0xab };
 	memcpy(&rezultat[0], &b, sizeof(float));
 	uint8_t lastBufferIdx = 0;
+	uint32_t iter = 0;
+	uint8_t send_module = 5;
 
 	if (MOCK_NAGIB) {
 		// delay
@@ -1195,7 +1200,7 @@ void StartMerjenjeNagiba(void *argument)
 			rezultat[2] = pitch;
 			rezultat[3] = yaw;
 
-			if (SEND_NAGIB) {
+			if (SEND_NAGIB && iter % send_module == 0) {
 				if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK){
 					addToWifiBuffer(rezultat, 4, &lastBufferIdx);
 					osSemaphoreRelease(wifiBufferSemaphoreHandle);
@@ -1207,6 +1212,7 @@ void StartMerjenjeNagiba(void *argument)
 				reverse *= -1;
 			}
 
+			iter++;
 			osDelayUntil(lastTick + ticksDelay);
 		}
 	} else {
@@ -1225,6 +1231,8 @@ void StartMerjenjeNagiba(void *argument)
 
 		int16_t meritev[9];
 		for (;;) {
+			HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
+
 			uint32_t lastTick = osKernelGetTickCount();
 
 			spi1_beriRegistre(0x28, (uint8_t*) &meritev[0], 6); // gyros
@@ -1242,13 +1250,14 @@ void StartMerjenjeNagiba(void *argument)
 			rezultat[2] = pitch;
 			rezultat[3] = yaw;
 
-			if (SEND_NAGIB) {
+			if (SEND_NAGIB && iter % send_module == 0) {
 				if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK){
 					addToWifiBuffer(rezultat, 4, &lastBufferIdx);
 					osSemaphoreRelease(wifiBufferSemaphoreHandle);
 				}
 			}
 
+			iter++;
 			osDelayUntil(lastTick + ticksDelay);
 		}
 	}
@@ -1283,6 +1292,8 @@ void StartTrilateracija(void *argument)
 		float t = 0.0f;
 		int reverse = 1;
 		for (;;) {
+			//HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_14);
+
 			uint32_t lastTick = osKernelGetTickCount();
 
 			float pos_x = cos(t);
@@ -1293,7 +1304,8 @@ void StartTrilateracija(void *argument)
 			rezultat[2] = pos_y;
 			rezultat[3] = pos_z;
 
-			if (SEND_TRILATERATION) {
+			//if (SEND_TRILATERATION) {
+			if (0) {
 				if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK){
 					addToWifiBuffer(rezultat, 4, &lastBufferIdx);
 					osSemaphoreRelease(wifiBufferSemaphoreHandle);
@@ -1327,9 +1339,13 @@ void StartPilotiranje(void *argument)
 {
   /* USER CODE BEGIN StartPilotiranje */
 	uint8_t lastBufferIdx = 0;
+	uint32_t iter = 0;
+	uint8_t send_module = 5;
 
 	for (;;) {
 		if (PWM_paket_ready) {
+			HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
+
 			uint16_t PWM[8];
 
 			for (uint8_t i = 0; i < 8; i++) {
@@ -1337,7 +1353,7 @@ void StartPilotiranje(void *argument)
 				PWM[i] = PWM_paket_new[i];
 			}
 
-			if (SEND_PWM_RAW) {
+			if (SEND_PWM_RAW && iter % send_module == 0) {
 				float header;
 				char b[] = { 0xaa, 0xae, 0xaa, 0xae };
 				memcpy(&header, &b, sizeof(float));
@@ -1374,7 +1390,7 @@ void StartPilotiranje(void *argument)
 				PWM_generated_ready = 1;
 			}
 
-			if (SEND_PWM_GEN) {
+			if (SEND_PWM_GEN && iter % send_module == 0) {
 				float header;
 				char b[] = { 0xaa, 0xaf, 0xaa, 0xaf };
 				memcpy(&header, &b, sizeof(float));
@@ -1384,6 +1400,7 @@ void StartPilotiranje(void *argument)
 				}
 			}
 
+			iter++;
 			PWM_paket_ready = 0;
 		}
 		osDelay(1);
@@ -1404,9 +1421,9 @@ void StartPosiljanjeWifi(void *argument)
 	// delay
 	float floatsPerSec = 0.0f
 			+ SEND_ALTITUDE * HEIGHT_SAMPLING_FREQ * 5.0f
-			+ SEND_NAGIB * MADGWICK_FREQ * 5.0f
-			+ SEND_TRILATERATION * TRILATERATION_SAMPLING_FREQ * 5.0f
-			+ (SEND_PWM_GEN + SEND_PWM_RAW + SEND_PWM_OUTGOING) * PWM_FREQ * 5.0f
+			+ SEND_NAGIB * MADGWICK_FREQ * 5.0f / 5.0f
+			//+ SEND_TRILATERATION * TRILATERATION_SAMPLING_FREQ * 5.0f
+			+ (SEND_PWM_GEN + SEND_PWM_RAW + SEND_PWM_OUTGOING) * PWM_FREQ * 5.0f / 5.0f
 			+ SEND_THRUST_AIRSIM * HEIGHT_SAMPLING_FREQ * 5.0f
 			+ SEND_AUTOLANDER_DEBUG * 5.0f; // not sent each second, but important
 
@@ -1439,6 +1456,8 @@ void StartPosiljanjeWifi(void *argument)
 
 			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK) {
 				if (wifiBufferIdx != 0) {
+					HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_12);
+
 					CompressBuffer();
 
 					// Transmit delays: can be further decreased (tested with down to 50, still worked)
@@ -1459,10 +1478,12 @@ void StartPosiljanjeWifi(void *argument)
 					strcat(ATCommand, "\r\n");
 
 					HAL_UART_Transmit(&huart1, (uint8_t*)&ATCommand[0], 15 + packetSize_digitsNum, ticksDelay); // Prepare to send data. 1st param: connection ID ; 2nd param: data length.
-					HAL_UART_Receive(&huart1, ATResponse, 24, 250);
+					//HAL_UART_Receive(&huart1, ATResponse, 24, 250);
+
+					osDelay(20);
 
 					HAL_UART_Transmit(&huart1, (uint8_t*)&wifiBuffer, packetSize, ticksDelay); // Actually send designated data.
-					HAL_UART_Receive(&huart1, ATResponse, 24, 250);
+					//HAL_UART_Receive(&huart1, ATResponse, 24, 250);
 
 					wifiBufferIdx = 0;
 				}
