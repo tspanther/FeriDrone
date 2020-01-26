@@ -553,7 +553,7 @@ int main(void)
   /* definition and creation of pilotiranje */
   const osThreadAttr_t pilotiranje_attributes = {
     .name = "pilotiranje",
-    .priority = (osPriority_t) osPriorityAboveNormal,
+    .priority = (osPriority_t) osPriorityNormal,
     .stack_size = 512
   };
   pilotiranjeHandle = osThreadNew(StartPilotiranje, NULL, &pilotiranje_attributes);
@@ -569,7 +569,7 @@ int main(void)
   /* definition and creation of transmitPWM */
   const osThreadAttr_t transmitPWM_attributes = {
     .name = "transmitPWM",
-    .priority = (osPriority_t) osPriorityHigh,
+    .priority = (osPriority_t) osPriorityNormal,
     .stack_size = 512
   };
   transmitPWMHandle = osThreadNew(StartTransmitPWM, NULL, &transmitPWM_attributes);
@@ -1386,7 +1386,7 @@ void StartPilotiranje(void *argument)
 
 			PWM_paket_ready = 0;
 		}
-		//osDelay(1);
+		osDelay(1);
 	}
   /* USER CODE END StartPilotiranje */
 }
@@ -1431,7 +1431,7 @@ void StartPosiljanjeWifi(void *argument)
 			osDelayUntil(lastTick + ticksDelay);
 		}
 	} else if (COMM_MODE == COMM_WIFI) {
-		uint8_t ATResponse[255] = {};
+		uint8_t ATResponse[24] = {};
 		char ATCommand[20];
 		for (;;) {
 			// WiFi: send from TCP client to TCP server.
@@ -1455,14 +1455,14 @@ void StartPosiljanjeWifi(void *argument)
 						packetSize_digitsNum++;
 
 					strcpy(ATCommand, "AT+CIPSEND=0,");
-					sprintf(ATCommand, "%d", packetSize);
+					sprintf(&ATCommand[13], "%d", packetSize);
 					strcat(ATCommand, "\r\n");
 
 					HAL_UART_Transmit(&huart1, (uint8_t*)&ATCommand[0], 15 + packetSize_digitsNum, ticksDelay); // Prepare to send data. 1st param: connection ID ; 2nd param: data length.
-					HAL_UART_Receive(&huart1, ATResponse, 255, 250);
+					HAL_UART_Receive(&huart1, ATResponse, 24, 250);
 
 					HAL_UART_Transmit(&huart1, (uint8_t*)&wifiBuffer, packetSize, ticksDelay); // Actually send designated data.
-					HAL_UART_Receive(&huart1, ATResponse, 255, 250);
+					HAL_UART_Receive(&huart1, ATResponse, 24, 250);
 
 					wifiBufferIdx = 0;
 				}
