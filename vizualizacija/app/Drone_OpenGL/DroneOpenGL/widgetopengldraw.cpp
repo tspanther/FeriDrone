@@ -42,11 +42,11 @@ void WidgetOpenGLDraw::printShaderInfoLog(GLuint obj) {
     int infologLength = 0;
     gl->glGetShaderiv(obj, GL_INFO_LOG_LENGTH, &infologLength);
     if (infologLength > 0) {
-		std::unique_ptr<char[]> infoLog(new char[infologLength]);
-		int charsWritten = 0;
+        std::unique_ptr<char[]> infoLog(new char[infologLength]);
+        int charsWritten = 0;
         gl->glGetShaderInfoLog(obj, infologLength, &charsWritten, infoLog.get());
-		std::cerr << infoLog.get() << "\n";
-	}
+        std::cerr << infoLog.get() << "\n";
+    }
 }
 
 void WidgetOpenGLDraw::compileShaders() {
@@ -56,25 +56,25 @@ void WidgetOpenGLDraw::compileShaders() {
         GLuint vs = gl->glCreateShader(GL_VERTEX_SHADER);
         std::string vss;
         readFile("../DroneOpenGL/vshader.vert", vss);
-		std::cout << vss;
-		const char *vssc = vss.c_str();
+        std::cout << vss;
+        const char *vssc = vss.c_str();
         gl->glShaderSource(vs, 1, &vssc, nullptr);
         gl->glCompileShader(vs);
-		printShaderInfoLog(vs);
+        printShaderInfoLog(vs);
         gl->glAttachShader(id_shader_program, vs);
-	}
+    }
 
     {
         GLuint fs = gl->glCreateShader(GL_FRAGMENT_SHADER);
         std::string fss;
         readFile("../DroneOpenGL/fshader.frag", fss);
-		std::cout << fss;
-		const char *fssc = fss.c_str();
+        std::cout << fss;
+        const char *fssc = fss.c_str();
         gl->glShaderSource(fs, 1, &fssc, nullptr);
         gl->glCompileShader(fs);
-		printShaderInfoLog(fs);
+        printShaderInfoLog(fs);
         gl->glAttachShader(id_shader_program, fs);
-	}
+    }
 
     gl->glLinkProgram(id_shader_program);
     printProgramInfoLog(id_shader_program);
@@ -158,16 +158,16 @@ void WidgetOpenGLDraw::initializeGL() {
                      "../DroneOpenGL/models/purple.png",
                      "../DroneOpenGL/models/yellowblue.png",
                      &light,
-                     "../DroneOpenGL/models/drone_props.obj",
-                     "../DroneOpenGL/models/yellowblue.png");
+                     "../DroneOpenGl/models/drone_props.obj",
+                     "../DroneOpenGl/models/plain_red.jpg");
 
     lockedOnCam = &dron->lockedOnCam;
     firstPCam = &dron->firstPCam;
 
     const unsigned int err = gl->glGetError();
-	if (err != 0) {
+    if (err != 0) {
         std::cerr << "OpenGL init error: " << err << std::endl;
-	}
+    }
 }
 
 void WidgetOpenGLDraw::resizeGL(int w, int h) {
@@ -195,8 +195,8 @@ void WidgetOpenGLDraw::paintGL() {
     dron->draw(P, V, id_shader_program, activeCam->pos);
 
     const unsigned int err = gl->glGetError();
-	if (err != 0) {
-		std::cerr << "OpenGL napaka: " << err << std::endl;
+    if (err != 0) {
+        std::cerr << "OpenGL napaka: " << err << std::endl;
     }
 }
 

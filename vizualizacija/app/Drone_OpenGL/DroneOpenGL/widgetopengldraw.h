@@ -13,12 +13,12 @@
 class QOpenGLFunctions_3_3_Core;
 class WidgetOpenGLDraw : public QOpenGLWidget{
 public:
-	WidgetOpenGLDraw(QWidget* parent);
+    WidgetOpenGLDraw(QWidget* parent);
 
     ~WidgetOpenGLDraw() override;
 private:
     void compileShaders();
-	void printProgramInfoLog(GLuint obj);
+    void printProgramInfoLog(GLuint obj);
     void printShaderInfoLog(GLuint obj);
     void loadAnimation();
     void stepAnimation();
@@ -50,9 +50,9 @@ private:
     unsigned int currObj = 0;
     int sign = 1;
 protected:
-	void paintGL() override;
-	void initializeGL() override;
-	void resizeGL(int w, int h) override;
+    void paintGL() override;
+    void initializeGL() override;
+    void resizeGL(int w, int h) override;
 
     void keyPressEvent(QKeyEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
