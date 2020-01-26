@@ -146,26 +146,42 @@ int main(void)
   /* USER CODE BEGIN 2 */
   esp8622init_server();
 
-  uint8_t prejetoSporocilo[512] = {};
+  uint8_t prejetoSporocilo[1000];
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_StatusTypeDef status = HAL_UART_Receive(&huart1, prejetoSporocilo, 512, 500); // Receive data via air.
+    memset(prejetoSporocilo, 0, 1000);
+	  HAL_StatusTypeDef status = HAL_UART_Receive(&huart1, prejetoSporocilo, 1000, 100); // this WILL timeout - no packet will be split between 2 buffers!!!
+    
+    // debug
+    //CDC_Transmit_FS((uint8_t*) &prejetoSporocilo[0], 1000);
 
-	  /* Received data structure:
-	   * server adds prefix + suffix.
-	   * PREFIX: +IPD,0,255:xyz...
-	   * SUFFIX: \r\n TODO: not sure about suffix. ; It does not matter; offset + 255 = suffix not considered anyway.
-	   *
-	   * PREFIX: static, 11 bytes.
-	   * SUFFIX: 2 bytes.
-	   */
-	  if (status != HAL_TIMEOUT)
-		  CDC_Transmit_FS((uint8_t*) &prejetoSporocilo[11], 255); // Send data forward via CDC.
-	  memset(prejetoSporocilo, 0, 512);
+    uint16_t idx = 0;
+    while(1) { // packets
+      if (prejetoSporocilo[idx] == 0)
+        break;
+      while(prejetoSporocilo[idx] != (uint8_t)':') { // search end of header
+        idx++;
+      }
+      uint16_t start = idx + 1;
+      // parse content length
+      idx--;
+      uint16_t content_length = 0; uint8_t power_of_10 = 0;
+      while(prejetoSporocilo[idx] < 58 && prejetoSporocilo[idx] > 47) { // is digit
+        uint16_t digit = prejetoSporocilo - 48;
+        for (uint8_t i = 0; i < power_of_10; i++){
+          digit *= 10;
+        }
+        content_length += digit;
+        power_of_10++;
+        idx--;
+      }
+      idx = start + content_length;
+      CDC_Transmit_FS((uint8_t*) &prejetoSporocilo[start], content_length);
+    }
   }
   /* USER CODE END WHILE */
 
