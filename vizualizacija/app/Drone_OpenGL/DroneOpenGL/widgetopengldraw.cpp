@@ -150,14 +150,16 @@ void WidgetOpenGLDraw::initializeGL() {
                                  &light));
 
     dron = new drone(gl,
-                     "../DroneOpenGL/models/drone.obj",
+                     "../DroneOpenGL/models/drone_no_props.obj",
                      "../DroneOpenGL/models/plain_red.jpg",
                      "../DroneOpenGL/models/arrow.obj",
                      "../DroneOpenGL/models/blue.jpg",
                      "../DroneOpenGL/models/green.jpg",
                      "../DroneOpenGL/models/purple.png",
                      "../DroneOpenGL/models/yellowblue.png",
-                     &light);
+                     &light,
+                     "../DroneOpenGL/models/drone_props.obj",
+                     "../DroneOpenGL/models/yellowblue.png");
 
     lockedOnCam = &dron->lockedOnCam;
     firstPCam = &dron->firstPCam;
