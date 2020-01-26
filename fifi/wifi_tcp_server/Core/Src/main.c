@@ -146,15 +146,15 @@ int main(void)
   /* USER CODE BEGIN 2 */
   esp8622init_server();
 
-  uint8_t prejetoSporocilo[5000];
+  uint8_t prejetoSporocilo[512];
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    memset(prejetoSporocilo, 0, 5000);
-	  HAL_StatusTypeDef status = HAL_UART_Receive(&huart1, prejetoSporocilo, 5000, 1000); // this WILL timeout - no packet will be split between 2 buffers!!!
+    memset(prejetoSporocilo, 0, 512);
+	  HAL_StatusTypeDef status = HAL_UART_Receive(&huart1, prejetoSporocilo, 512, 100); // this WILL timeout - no packet will be split between 2 buffers!!!
     
     // debug
     //uint8_t demo[256] = {13, 10, 43, 73, 80, 68, 44, 48, 44, 50, 52, 48, 58, 170, 161, 170, 161, 51, 51, 211, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 161, 170, 161, 51, 51, 211, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 171, 170, 171, 191, 22, 85, 188, 86, 107, 100, 60, 240, 230, 252, 190, 0, 0, 0, 0, 170, 171, 170, 171, 186, 138, 212, 188, 129, 51, 201, 60, 71, 108, 124, 191, 0, 0, 0, 0, 170, 161, 170, 161, 51, 51, 211, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 171, 170, 171, 22, 153, 61, 189, 241, 210, 15, 61, 106, 237, 188, 191, 0, 0, 0, 0, 170, 171, 170, 171, 138, 78, 115, 189, 243, 250, 70, 61, 42, 17, 252, 191, 0, 0, 0, 0, 170, 161, 170, 161, 51, 51, 211, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 171, 170, 171, 50, 241, 160, 189, 138, 44, 127, 61, 130, 179, 29, 192, 0, 0, 0, 0, 170, 161, 170, 161, 51, 51, 211, 63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 170, 171, 170, 171, 252, 197, 192, 189, 8, 72, 157, 61, 210, 52, 61, 192, 0, 0, 0, 0, 170, 171, 170, 171, 196, 177, 229, 189, 166, 196, 182, 61, 140, 212, 92, 192, 0, 0, 0, 0 };
@@ -166,11 +166,11 @@ int main(void)
         break;
       while(prejetoSporocilo[idx] != (uint8_t)':') { // search end of header
         idx++;
-        if (idx == 5000){
+        if (idx == 512){
         	break;
         }
       }
-      if (idx == 5000){
+      if (idx == 512){
       	break;
       }
       uint16_t start = idx + 1;
