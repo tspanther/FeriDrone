@@ -415,39 +415,49 @@ void initLSM303DLHC() {
 	i2c1_pisiRegister(0x3c, 0x00, 0x18); // magnet 75hz
 }
 
-
-// Start TCP client. Warning: server needs to be running prior to client launch.
 void initEsp8622TcpClient(){
-	  // Uart1 (PA15_TX ; PB7_RX)-> TCP server.
-	// Težava; busy p.. odgovor; idk;
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWMODE=1\r\n", 13, 1000); // 1 = ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  //memset(prejetoSporocilo, 0, 255);
+	/*
+	 *	TCP client initialization. WARNING: server needs to be running first, otherwise client restart necessary.
+	 *	COMMON ISSUE: ESP8622 module replying busy. Increase timeout or add a very small
+	 *	delay between transmit and receive. Or restart.
+	 *	It is also possible to wait in UART_receive, until the module reply 'OK'.
+	 *	WARNING: The TCP client should send data at least every 4 seconds, otherwise it gets auto
+	 *	disconnected.
+	 *	Uart1 (PA15_TX ; PB7_RX)-> TCP server.
+	 *	Content in comments kept for debug purposes.
+	 */
 
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWLAP\r\n", 10, 1000); // Connect to router. Tega ne razumem najboljse.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  //memset(prejetoSporocilo, 0, 255);
+	uint8_t prejetoSporocilo[255] = {};
 
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP?\r\n", 11, 1000); // Setup server with default port 333.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-	  CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWMODE=1\r\n", 13, 1000); // Station mode.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
 
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP=\"server\",\"123456780\"\r\n", 33, 1000); // Connect to router. Tega ne razumem najboljse.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  //memset(prejetoSporocilo, 0, 255);
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWLAP\r\n", 10, 1000); // Lists available APs.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
 
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPMUX=1\r\n", 13, 1000); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-	  //memset(prejetoSporocilo, 0, 255);
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP=\"server\",\"123456780\"\r\n", 33, 1000); // Connect to designated AP.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
 
-	  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSTART=0,\"TCP\",\"192.168.4.1\",333\r\n", 39, 1000); // Set wifi mode: AP + ST.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-	  //CDC_Transmit_FS(prejetoSporocilo, 255);
-	  //memset(prejetoSporocilo, 0, 255);
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP?\r\n", 11, 1000); // Query APs info.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPMUX=1\r\n", 13, 1000); // Enable multiple connections.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSTART=0,\"TCP\",\"192.168.4.1\",333\r\n", 39, 1000); // Establish TCP connection.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
 }
 /* USER CODE END 0 */
 
@@ -1415,7 +1425,35 @@ void StartPosiljanjeWifi(void *argument)
 		}
 	} else if (COMM_MODE == COMM_WIFI) {
 		for (;;) {
-			// todo: wifi
+			// WiFi: send from TCP client to TCP server.
+			uint32_t lastTick = osKernelGetTickCount();
+
+			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK) {
+				if (wifiBufferIdx != 0) {
+					CompressBuffer();
+
+					// Transmit delays: can be further decreased (tested with down to 50, still worked)
+					// Receive delays: ¯\_(ツ)_/¯
+					// Niko: kar se tiče OSa pa časov nisem nič spreminjal.
+
+					uint8_t prejetoSporocilo[255] = {};
+
+					HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSEND=0,255\r\n", 16, 250); // Prepare to send data. 1st param: connection ID ; 2nd param: data length.
+					HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 250);
+					/*CDC_Transmit_FS(prejetoSporocilo, 255);
+					memset(prejetoSporocilo, 0, 255);*/
+
+					HAL_UART_Transmit(&huart1, (uint8_t*)&wifiBuffer, wifiBufferIdx * sizeof(float), 250); // Actually send designated data.
+					HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 250);
+					/*CDC_Transmit_FS(prejetoSporocilo, 255);
+					memset(prejetoSporocilo, 0, 255);*/
+
+					wifiBufferIdx = 0;
+				}
+				osSemaphoreRelease(wifiBufferSemaphoreHandle);
+			}
+
+			osDelayUntil(lastTick + ticksDelay);
 		}
 	}
   /* USER CODE END StartPosiljanjeWifi */

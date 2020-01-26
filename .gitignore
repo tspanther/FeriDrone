@@ -19,3 +19,13 @@ rg/objekti/vaja2_mon.obj
 /**/ST/**/*.list
 /**/ST/**/*.map
 /**/ST/**/makefile
+
+/**/fifi/**/*.o
+/**/fifi/**/*.su
+/**/fifi/**/*.d
+/**/fifi/**/*.mk
+/**/fifi/**/*.elf
+/**/fifi/**/*.list
+/**/fifi/**/*.map
+/**/fifi/**/makefile
+
