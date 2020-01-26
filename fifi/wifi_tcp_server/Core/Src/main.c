@@ -153,7 +153,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 512, 500); // Receive data via air.
+	  HAL_StatusTypeDef status = HAL_UART_Receive(&huart1, prejetoSporocilo, 512, 500); // Receive data via air.
 
 	  /* Received data structure:
 	   * server adds prefix + suffix.
@@ -163,8 +163,8 @@ int main(void)
 	   * PREFIX: static, 11 bytes.
 	   * SUFFIX: 2 bytes.
 	   */
-
-	  CDC_Transmit_FS((uint8_t*) &prejetoSporocilo[11], 255); // Send data forward via CDC.
+	  if (status != HAL_TIMEOUT)
+		  CDC_Transmit_FS((uint8_t*) &prejetoSporocilo[11], 255); // Send data forward via CDC.
 	  memset(prejetoSporocilo, 0, 512);
   }
   /* USER CODE END WHILE */

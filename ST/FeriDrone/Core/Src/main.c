@@ -61,7 +61,7 @@
 
 #define COMM_USB 0
 #define COMM_WIFI 1
-#define COMM_MODE COMM_USB
+#define COMM_MODE COMM_WIFI
 
 #define WIFI_BUFFER_SIZE 256
 /* USER CODE END PD */
@@ -121,7 +121,7 @@ volatile uint16_t tsStopDecel = 0;
 // PWM
 #define PWM_FREQ 50.0f
 #define THROTTLE_CHANNEL 2
-#define AUTOLANDER_CHANNEL 5
+#define AUTOLANDER_CHANNEL 7
 #define PWM_LOW 800
 #define PWM_HIGH 2050
 #define PWM_PAUSE_LOW 6000
@@ -505,6 +505,7 @@ int main(void)
   __HAL_I2C_ENABLE(&hi2c3);
   HAL_TIM_Base_Start(&htim3);
   HAL_TIM_Base_Start_IT(&htim3);
+  initEsp8622TcpClient();
   /* USER CODE END 2 */
 
   osKernelInitialize();
@@ -896,46 +897,52 @@ htim1.Instance = TIM1;
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 64;
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 65535;
-  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim1.Init.RepetitionCounter = 0;
-  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_IC_Init(&htim1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
-  sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
-  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_FALLING;
-  sSlaveConfig.TriggerFilter = 0;
-  if (HAL_TIM_SlaveConfigSynchro(&htim1, &sSlaveConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
-  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
-  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-  sConfigIC.ICFilter = 0;
-  if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
+    htim1.Init.Prescaler = 64;
+    htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim1.Init.Period = 65535;
+    htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim1.Init.RepetitionCounter = 0;
+    htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    if (HAL_TIM_IC_Init(&htim1) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
+    sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
+    sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
+    sSlaveConfig.TriggerPrescaler = TIM_ICPSC_DIV1;
+    sSlaveConfig.TriggerFilter = 0;
+    if (HAL_TIM_SlaveConfigSynchro(&htim1, &sSlaveConfig) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+    if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_FALLING;
+    sConfigIC.ICSelection = TIM_ICSELECTION_INDIRECTTI;
+    sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+    sConfigIC.ICFilter = 0;
+    if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
+    {
+      Error_Handler();
+    }
+    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+    sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+    if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
+    {
+      Error_Handler();
+    }
+
+    HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_2);
+    HAL_TIM_IC_Start(&htim1, TIM_CHANNEL_1);
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
@@ -1379,7 +1386,7 @@ void StartPilotiranje(void *argument)
 
 			PWM_paket_ready = 0;
 		}
-		osDelay(1);
+		//osDelay(1);
 	}
   /* USER CODE END StartPilotiranje */
 }
@@ -1424,6 +1431,8 @@ void StartPosiljanjeWifi(void *argument)
 			osDelayUntil(lastTick + ticksDelay);
 		}
 	} else if (COMM_MODE == COMM_WIFI) {
+		uint8_t ATResponse[255] = {};
+		char ATCommand[20];
 		for (;;) {
 			// WiFi: send from TCP client to TCP server.
 			uint32_t lastTick = osKernelGetTickCount();
@@ -1436,17 +1445,24 @@ void StartPosiljanjeWifi(void *argument)
 					// Receive delays: ¯\_(ツ)_/¯
 					// Niko: kar se tice OSa pa casov nisem nic spreminjal.
 
-					uint8_t prejetoSporocilo[255] = {};
+					uint16_t packetSize = wifiBufferIdx * sizeof(float);
+					uint8_t packetSize_digitsNum = 1;
+					if (packetSize >= 10)
+						packetSize_digitsNum++;
+					if (packetSize >= 100)
+						packetSize_digitsNum++;
+					if (packetSize >= 1000)
+						packetSize_digitsNum++;
 
-					HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSEND=0,255\r\n", 16, 250); // Prepare to send data. 1st param: connection ID ; 2nd param: data length.
-					HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 250);
-					/*CDC_Transmit_FS(prejetoSporocilo, 255);
-					memset(prejetoSporocilo, 0, 255);*/
+					strcpy(ATCommand, "AT+CIPSEND=0,");
+					sprintf(ATCommand, "%d", packetSize);
+					strcat(ATCommand, "\r\n");
 
-					HAL_UART_Transmit(&huart1, (uint8_t*)&wifiBuffer, wifiBufferIdx * sizeof(float), 250); // Actually send designated data.
-					HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 250);
-					/*CDC_Transmit_FS(prejetoSporocilo, 255);
-					memset(prejetoSporocilo, 0, 255);*/
+					HAL_UART_Transmit(&huart1, (uint8_t*)&ATCommand[0], 15 + packetSize_digitsNum, ticksDelay); // Prepare to send data. 1st param: connection ID ; 2nd param: data length.
+					HAL_UART_Receive(&huart1, ATResponse, 255, 250);
+
+					HAL_UART_Transmit(&huart1, (uint8_t*)&wifiBuffer, packetSize, ticksDelay); // Actually send designated data.
+					HAL_UART_Receive(&huart1, ATResponse, 255, 250);
 
 					wifiBufferIdx = 0;
 				}
