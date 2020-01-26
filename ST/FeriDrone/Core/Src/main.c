@@ -83,6 +83,7 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 
 osThreadId_t merjenjeNagibaHandle;
@@ -155,6 +156,7 @@ static void MX_SPI1_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 void StartMerjenjeNagiba(void *argument);
 void StartTrilateracija(void *argument);
@@ -172,6 +174,7 @@ uint8_t i2c1_pisiRegister(uint8_t, uint8_t, uint8_t);
 void i2c1_beriRegistre(uint8_t, uint8_t, uint8_t*, uint8_t, uint8_t);
 void initLSM303DLHC(void);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
+void initEsp8622TcpClient(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -411,6 +414,51 @@ void initLSM303DLHC() {
 	i2c1_pisiRegister(0x19, 0x23, 0x88); // accel; 1(7); output registers not updated until MSB and LSB reading, 1(3); high resolution
 	i2c1_pisiRegister(0x3c, 0x00, 0x18); // magnet 75hz
 }
+
+void initEsp8622TcpClient(){
+	/*
+	 *	TCP client initialization. WARNING: server needs to be running first, otherwise client restart necessary.
+	 *	COMMON ISSUE: ESP8622 module replying busy. Increase timeout or add a very small
+	 *	delay between transmit and receive. Or restart.
+	 *	It is also possible to wait in UART_receive, until the module reply 'OK'.
+	 *	WARNING: The TCP client should send data at least every 4 seconds, otherwise it gets auto
+	 *	disconnected.
+	 *	Uart1 (PA15_TX ; PB7_RX)-> TCP server.
+	 *	Content in comments kept for debug purposes.
+	 */
+
+	uint8_t prejetoSporocilo[255] = {};
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWMODE=1\r\n", 13, 1000); // Station mode.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWLAP\r\n", 10, 1000); // Lists available APs.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP=\"server\",\"123456780\"\r\n", 33, 1000); // Connect to designated AP.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWJAP?\r\n", 11, 1000); // Query APs info.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPMUX=1\r\n", 13, 1000); // Enable multiple connections.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSTART=0,\"TCP\",\"192.168.4.1\",333\r\n", 39, 1000); // Establish TCP connection.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+}
 /* USER CODE END 0 */
 
 /**
@@ -449,6 +497,7 @@ int main(void)
   MX_I2C3_Init();
   MX_TIM1_Init();
   MX_TIM3_Init();
+  MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   /* init code for USB_DEVICE */
@@ -847,52 +896,46 @@ htim1.Instance = TIM1;
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-    htim1.Init.Prescaler = 64;
-    htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-    htim1.Init.Period = 65535;
-    htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    htim1.Init.RepetitionCounter = 0;
-    htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
-    {
-      Error_Handler();
-    }
-    if (HAL_TIM_IC_Init(&htim1) != HAL_OK)
-    {
-      Error_Handler();
-    }
-    sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
-    sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
-    sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_RISING;
-    sSlaveConfig.TriggerPrescaler = TIM_ICPSC_DIV1;
-    sSlaveConfig.TriggerFilter = 0;
-    if (HAL_TIM_SlaveConfigSynchro(&htim1, &sSlaveConfig) != HAL_OK)
-    {
-      Error_Handler();
-    }
-    sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-    sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
-    {
-      Error_Handler();
-    }
-    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_FALLING;
-    sConfigIC.ICSelection = TIM_ICSELECTION_INDIRECTTI;
-    sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
-    sConfigIC.ICFilter = 0;
-    if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
-    {
-      Error_Handler();
-    }
-    sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
-    sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
-    if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
-    {
-      Error_Handler();
-    }
-
-    HAL_TIM_IC_Start_IT(&htim1, TIM_CHANNEL_2);
-    HAL_TIM_IC_Start(&htim1, TIM_CHANNEL_1);
+  htim1.Init.Prescaler = 64;
+  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim1.Init.Period = 65535;
+  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim1.Init.RepetitionCounter = 0;
+  htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_IC_Init(&htim1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
+  sSlaveConfig.InputTrigger = TIM_TS_TI2FP2;
+  sSlaveConfig.TriggerPolarity = TIM_TRIGGERPOLARITY_FALLING;
+  sSlaveConfig.TriggerFilter = 0;
+  if (HAL_TIM_SlaveConfigSynchro(&htim1, &sSlaveConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim1, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+  sConfigIC.ICFilter = 0;
+  if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_IC_ConfigChannel(&htim1, &sConfigIC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
@@ -941,6 +984,39 @@ static void MX_TIM3_Init(void)
   /* USER CODE BEGIN TIM3_Init 2 */
 
   /* USER CODE END TIM3_Init 2 */
+
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
 
 }
 
@@ -1349,7 +1425,35 @@ void StartPosiljanjeWifi(void *argument)
 		}
 	} else if (COMM_MODE == COMM_WIFI) {
 		for (;;) {
-			// todo: wifi
+			// WiFi: send from TCP client to TCP server.
+			uint32_t lastTick = osKernelGetTickCount();
+
+			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, ticksDelay) == osOK) {
+				if (wifiBufferIdx != 0) {
+					CompressBuffer();
+
+					// Transmit delays: can be further decreased (tested with down to 50, still worked)
+					// Receive delays: ¯\_(ツ)_/¯
+					// Niko: kar se tiče OSa pa časov nisem nič spreminjal.
+
+					uint8_t prejetoSporocilo[255] = {};
+
+					HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSEND=0,255\r\n", 16, 250); // Prepare to send data. 1st param: connection ID ; 2nd param: data length.
+					HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 250);
+					/*CDC_Transmit_FS(prejetoSporocilo, 255);
+					memset(prejetoSporocilo, 0, 255);*/
+
+					HAL_UART_Transmit(&huart1, (uint8_t*)&wifiBuffer, wifiBufferIdx * sizeof(float), 250); // Actually send designated data.
+					HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 250);
+					/*CDC_Transmit_FS(prejetoSporocilo, 255);
+					memset(prejetoSporocilo, 0, 255);*/
+
+					wifiBufferIdx = 0;
+				}
+				osSemaphoreRelease(wifiBufferSemaphoreHandle);
+			}
+
+			osDelayUntil(lastTick + ticksDelay);
 		}
 	}
   /* USER CODE END StartPosiljanjeWifi */
