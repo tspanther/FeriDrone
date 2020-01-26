@@ -8,7 +8,7 @@
 class drone : public Object
 {
 public:
-    drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow_1, const char* texFileArrow_2, const char* texFileArrow_3, const char* texFileTrajectory, Light* light_in);
+    drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow_1, const char* texFileArrow_2, const char* texFileArrow_3, const char* texFileTrajectory, Light* light_in, const char* objFileProps, const char* texFileProps);
     ~drone();
     void draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::vec3 camPos);
     void moveTo(glm::vec3 vec, unsigned int step);
@@ -23,6 +23,10 @@ private:
     std::queue<glm::mat4> LRUD;
     static unsigned int prevLocWindowSize;
     static unsigned int LRUDWindowSize;
+
+    float time = 0.0f;
+    float timeStep = 0.02f; // make static
+    float propSpeeds[4] = { 5.0f, 10.0f, 10.0f, 10.0f };
 
     // convenience
     glm::vec4 lookAtPoint_init = glm::vec4(0.0, 0.0, -1.0, 1.0);
@@ -49,6 +53,15 @@ private:
     GLuint VAO_ArrVEL;
     GLuint tex_id_ArrVEL;
     std::vector<float> data_ArrVEL;
+
+    // Propelers
+    // Prop1.
+    std::vector<GLuint> VBO_Props;
+    std::vector<GLuint> VAO_Props;
+
+    GLuint tex_id_Prop;
+    std::vector<std::vector<float>> data_props;
+    std::vector<glm::vec3> propOffsets;
 
     // trajectory
     float alpha = 0.4f;
