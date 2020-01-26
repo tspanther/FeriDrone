@@ -16,7 +16,8 @@ public:
     void clearTraj(void);
 
     // 1stP camera
-    Camera cam;
+    Camera firstPCam;
+    Camera lockedOnCam;
 private:
     std::queue<glm::vec3> prevLocations;
     std::queue<glm::mat4> LRUD;
@@ -24,8 +25,12 @@ private:
     static unsigned int LRUDWindowSize;
 
     // convenience
-    glm::vec3 lookAt;
-    glm::vec3 upVec;
+    glm::vec4 lookAtPoint_init = glm::vec4(0.0, 0.0, -1.0, 1.0);
+    glm::vec4 upVecPoint_init = glm::vec4(0.0, 2.0, 3.0, 1.0);
+    glm::vec4 fpPosPoint_init = glm::vec4(0.0, 1.0, 3.0, 1.0);
+    glm::vec4 lookAtPoint = glm::vec4(0.0, 0.0, -1.0, 1.0);
+    glm::vec4 upVecPoint = glm::vec4(0.0, 1.5, 0.0, 1.0);
+    glm::vec4 fpPosPoint = glm::vec4(0.0, 0.5, 0.0, 1.0);
 
     // arrows
     float arrScale = 0.1f;

@@ -5,9 +5,6 @@ unsigned int drone::prevLocWindowSize = 5;
 unsigned int drone::LRUDWindowSize = 3;
 
 drone::drone(QOpenGLFunctions_3_3_Core *gl_in, const char* objFile, const char* texFile, const char* objFileArrow, const char* texFileArrow_1, const char* texFileArrow_2, const char* texFileArrow_3, const char* texFileTrajectory, Light* light_in) : Object(gl_in, objFile, texFile, light_in) {
-    lookAt = glm::vec3(0.0, 0.0, -1.0);
-    upVec = glm::vec3(0.0, 1.0, 0.0);
-
     Object::loadObj(objFileArrow, &data_ArrLA);
     Object::loadObj(objFileArrow, &data_ArrUV);
     Object::loadObj(objFileArrow, &data_ArrVEL);
@@ -85,7 +82,8 @@ drone::~drone(){
 
 void drone::moveTo(glm::vec3 vec, unsigned int step){
     pos = vec;
-    cam.camPos = pos - 2.0f * cam.lookAt + glm::vec3(0.0f, 1.0f, 0.0f);
+
+    //firstPCam.camPos = pos - 2.0f * firstPCam.lookAt + glm::vec3(0.0f, 1.0f, 0.0f);
 
     prevLocations.push(vec);
 
@@ -161,16 +159,20 @@ void drone::moveTo(glm::vec3 vec, unsigned int step){
             data_traj.insert(data_traj.end(), a.begin(), a.end());
         }
     }
+
 }
 
 void drone::tiltTo(float roll_, float pitch_, float yaw_){
+
     roll = roll_; pitch = pitch_; yaw = yaw_;
+/*
+    firstPCam.roll = glm::pi<float>() / 2 + roll_;
+    firstPCam.pitch = pitch_;
+    firstPCam.yaw = -glm::pi<float>() / 2 + yaw_;
 
-    cam.roll = glm::pi<float>() / 2 + roll_;
-    cam.pitch = pitch_;
-    cam.yaw = -glm::pi<float>() / 2 + yaw_;
 
-    cam.updateUpVec(); cam.updateLookAt();
+    firstPCam.updateUpVec(); firstPCam.updateLookAt();
+    */
 }
 
 void drone::clearTraj(void){
@@ -179,6 +181,27 @@ void drone::clearTraj(void){
 
 void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::vec3 camPos) {
     Object::draw(P, V, id_shader_program, camPos);
+
+    glm::mat4 M = glm::mat4(1);
+    M = glm::translate(M, pos); // object move
+    M = glm::rotate(M, yaw, glm::vec3(1, 0, 0)); // object rotate
+    M = glm::rotate(M, pitch, glm::vec3(0, 1, 0));
+    M = glm::rotate(M, roll, glm::vec3(0, 0, 1));
+    upVecPoint = M * upVecPoint_init;
+    lookAtPoint = M * lookAtPoint_init;
+    fpPosPoint = M * fpPosPoint_init;
+    firstPCam.lookAt = glm::normalize(lookAtPoint - fpPosPoint);
+    firstPCam.upVec = glm::normalize(upVecPoint - fpPosPoint);
+    firstPCam.pos = fpPosPoint;
+
+    /*
+    // disable shading
+    glm::vec3 one = 10.0f*glm::vec3(0.1f, 0.1f, 0.1f);
+    glm::vec3 nul = 0.0f*glm::vec3(0.1f, 0.1f, 0.1f);
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Ra"), 1, glm::value_ptr(one));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Rd"), 1, glm::value_ptr(nul));
+    gl->glUniform3fv(gl->glGetUniformLocation(id_shader_program, "Rs"), 1, glm::value_ptr(nul));
+    */
 
     // trajectory
     gl->glBindVertexArray(VAO_traj);
@@ -189,7 +212,7 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::
     gl->glDrawArrays(GL_TRIANGLES, 0, data_traj.size() * sizeof(float));
 
     // lookAt Arrow
-    glm::mat4 M = glm::mat4(1);
+    /*glm::mat4*/ M = glm::mat4(1);
     M = glm::translate(M, pos); // object move
     M = glm::rotate(M, float(yaw), glm::vec3(1, 0, 0)); // object rotate
     M = glm::rotate(M, float(pitch), glm::vec3(0, 1, 0));
