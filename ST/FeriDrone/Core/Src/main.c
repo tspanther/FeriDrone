@@ -1434,7 +1434,7 @@ void StartPosiljanjeWifi(void *argument)
 
 					// Transmit delays: can be further decreased (tested with down to 50, still worked)
 					// Receive delays: ¯\_(ツ)_/¯
-					// Niko: kar se tiče OSa pa časov nisem nič spreminjal.
+					// Niko: kar se tice OSa pa casov nisem nic spreminjal.
 
 					uint8_t prejetoSporocilo[255] = {};
 

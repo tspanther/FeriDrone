@@ -67,10 +67,44 @@ static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
+void esp8622init_server(void);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+uint8_t prejetoSporocilo[255] = {};
+
+void esp8622init_server(void){
+	/*	TCP server.
+	 *	Uart1 (PA15_TX ; PB7_RX)-> TCP server.
+	*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWMODE=2\r\n", 13, 1000); // AP mode aka. router mode.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWSAP=\"server\",\"123456780\",1,3\r\n", 35, 1000); // Set up AP with designated ssid and password.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPMUX=1\r\n", 13, 1000); // Enable multiple connections.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSERVER=1\r\n", 16, 1000); // Start server at the default port 3333 with default IP.
+	HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
+	/*CDC_Transmit_FS(prejetoSporocilo, 255);
+	memset(prejetoSporocilo, 0, 255);*/
+
+	// WARNING: server default IP: 192.168.4.1
+	// Hopefully it does not change.
+	// AT+CIPSTA="192.168.4.1" in case of emergency don't break the glass, use this command. :) ; not tested.
+}
 
 /* USER CODE END 0 */
 
@@ -110,55 +144,33 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
+  esp8622init_server();
 
-  uint8_t inicializacija = 0;
-  uint8_t prejetoSporocilo[255] = {};
-
+  uint8_t prejetoSporocilo[512] = {};
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  // Debug delay.
-	 // HAL_Delay(8000); // 8 s.
+	  HAL_UART_Receive(&huart1, prejetoSporocilo, 512, 500); // Receive data via air.
 
-	  if(!inicializacija){
-		  // Uart1 (PA15_TX ; PB7_RX)-> TCP server.
-		  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWMODE=2\r\n", 13, 1000); // 2 = AP.
-		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-		  memset(prejetoSporocilo, 0, 255);
+	  /* Received data structure:
+	   * server adds prefix + suffix.
+	   * PREFIX: +IPD,0,255:xyz...
+	   * SUFFIX: \r\n TODO: not sure about suffix.
+	   *
+	   * PREFIX: static, 11 bytes.
+	   * SUFFIX: 2 bytes.
+	   */
 
-		  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CWSAP=\"server\",\"123456780\",1,3\r\n", 35, 1000); // Enable multiple comms.
-		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-		  CDC_Transmit_FS(prejetoSporocilo, 255);
-		  memset(prejetoSporocilo, 0, 255);
-
-		  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPMUX=1\r\n", 13, 1000); // Enable multiple comms.
-		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-		  memset(prejetoSporocilo, 0, 255);
-
-		  HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSERVER=1\r\n", 16, 1000); // Setup server with default port 333.
-		  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 1000);
-		  CDC_Transmit_FS(prejetoSporocilo, 255);
-		  memset(prejetoSporocilo, 0, 255);
-
-		  // Server IP: 192.168.4.1
-
-		  inicializacija = 1;
-	  }
-
-	  //HAL_UART_Transmit(&huart1, (uint8_t*)"AT+CIPSTATUS\r\n", 14, 1000); // Setup server with default port 333.
-	  HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 500);
-	  CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);
-
-	  // Recieve data from client.
-	  /*HAL_UART_Receive(&huart1, prejetoSporocilo, 255, 100);
-	  CDC_Transmit_FS(prejetoSporocilo, 255);
-	  memset(prejetoSporocilo, 0, 255);*/
+	  CDC_Transmit_FS((uint8_t*) &prejetoSporocilo[11], 255); // Send data forward via CDC.
+	  memset(prejetoSporocilo, 0, 512);
   }
-  /* USER CODE END 3 */
+  /* USER CODE END WHILE */
+
+  /* USER CODE BEGIN 3 */
+/* USER CODE END 3 */
 }
 
 /**
