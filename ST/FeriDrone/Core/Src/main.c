@@ -1170,7 +1170,7 @@ void StartMerjenjeNagiba(void *argument)
 	char b[] = { 0xaa, 0xab, 0xaa, 0xab };
 	memcpy(&rezultat[0], &b, sizeof(float));
 	uint8_t lastBufferIdx = 0;
-	uint32_t iter = 0;
+	uint8_t iter = 0;
 	uint8_t send_module = 5;
 
 	if (MOCK_NAGIB) {
@@ -1339,8 +1339,8 @@ void StartPilotiranje(void *argument)
 {
   /* USER CODE BEGIN StartPilotiranje */
 	uint8_t lastBufferIdx = 0;
-	uint32_t iter = 0;
-	uint8_t send_module = 5;
+	uint8_t iter = 0;
+	uint8_t send_module = 1;
 
 	for (;;) {
 		if (PWM_paket_ready) {
@@ -1421,9 +1421,9 @@ void StartPosiljanjeWifi(void *argument)
 	// delay
 	float floatsPerSec = 0.0f
 			+ SEND_ALTITUDE * HEIGHT_SAMPLING_FREQ * 5.0f
-			+ SEND_NAGIB * MADGWICK_FREQ * 5.0f / 5.0f
+			+ SEND_NAGIB * MADGWICK_FREQ * 5.0f
 			//+ SEND_TRILATERATION * TRILATERATION_SAMPLING_FREQ * 5.0f
-			+ (SEND_PWM_GEN + SEND_PWM_RAW + SEND_PWM_OUTGOING) * PWM_FREQ * 5.0f / 5.0f
+			+ (SEND_PWM_GEN + SEND_PWM_RAW + SEND_PWM_OUTGOING) * PWM_FREQ * 5.0f
 			+ SEND_THRUST_AIRSIM * HEIGHT_SAMPLING_FREQ * 5.0f
 			+ SEND_AUTOLANDER_DEBUG * 5.0f; // not sent each second, but important
 
@@ -1608,7 +1608,7 @@ void StartAltitudeMeasure(void *argument)
   /* USER CODE BEGIN StartAltitudeMeasure */
   /* Infinite loop */
 	uint8_t lastBufferIdx = 0;
-	float heightsMock[] = { 2.0f, 1.9997f, 1.9875f, 1.9633f, 1.9271f, 1.8788f, 1.8185f, 1.7462f, 1.6618f, 1.5655f, 1.4571f, 1.3367f };
+	//float heightsMock[] = { 2.0f, 1.9997f, 1.9875f, 1.9633f, 1.9271f, 1.8788f, 1.8185f, 1.7462f, 1.6618f, 1.5655f, 1.4571f, 1.3367f };
 	uint16_t interval = (int)(1000.0f * HEIGHT_SAMPLING_INTE);
 	/*
 	uint16_t altitude;
@@ -1643,14 +1643,14 @@ void StartAltitudeMeasure(void *argument)
 			float data[2];
 			char b[] = { 0xaa, 0xa1, 0xaa, 0xa1 };
 			memcpy(&data[0], &b, sizeof(float));
-			data[1] = heightsMock[heightSample_idx % 12];
+			//data[1] = heightsMock[heightSample_idx % 12];
 			if (osSemaphoreAcquire(wifiBufferSemaphoreHandle, 5) == osOK) {
 				addToWifiBuffer(&data[0], 2, &lastBufferIdx);
 				osSemaphoreRelease(wifiBufferSemaphoreHandle);
 			}
 		}
 
-    	autolander_newMeasurement(heightsMock[heightSample_idx % 12]); // mod, only need 12 samples
+    	//autolander_newMeasurement(heightsMock[heightSample_idx % 12]); // mod, only need 12 samples
 
     	osDelayUntil(start_tick + (int)(1000.0f * HEIGHT_SAMPLING_INTE));
     } else {
