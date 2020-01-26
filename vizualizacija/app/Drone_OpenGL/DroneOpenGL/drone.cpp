@@ -331,12 +331,9 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::
     gl->glUniformMatrix4fv(gl->glGetUniformLocation(id_shader_program, "PVM"), 1, GL_FALSE, glm::value_ptr(PVM));
     gl->glDrawArrays(GL_TRIANGLES, 0, data_ArrLA.size() * sizeof(float));
 
-    glm::vec3 propPosition = pos;
-    //propPosition.x = propPosition.x;
-    propPosition.y = propPosition.y;
     // upVec Arrow
     M = glm::mat4(1);
-    M = glm::translate(M, propPosition); // object move
+    M = glm::translate(M, pos); // object move
     M = glm::rotate(M, float(yaw), glm::vec3(1, 0, 0)); // object rotate
     M = glm::rotate(M, float(pitch), glm::vec3(0, 1, 0));
     M = glm::rotate(M, float(roll), glm::vec3(0, 0, 1));
