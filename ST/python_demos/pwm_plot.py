@@ -12,16 +12,19 @@ pulses = ['1u','2u','3u','4u','5u','6u','7u','8u','9u']
 kernel = low_pass.gauss_kernel(7)
 
 for i in range(9):
+    '''
     per = low_pass.convolution(df[periods[i]].to_numpy(), kernel)
     plt.plot(per)
     plt.savefig(FILE + '_period{}.png'.format(i))
     plt.clf()
-
+    '''
+    if i == 4:
+        continue
     pul = low_pass.convolution(df[pulses[i]].to_numpy(), kernel)
     plt.plot(pul)
-    plt.savefig(FILE + '_pulse{}.png'.format(i))
-    plt.clf()
 
+
+    '''
     u_minus_e = low_pass.convolution(df[pulses[i]].to_numpy() - df[periods[i]].to_numpy(), kernel)
     plt.plot(u_minus_e)
     plt.savefig(FILE + '_uminuse{}.png'.format(i))
@@ -31,3 +34,7 @@ for i in range(9):
     plt.plot(e_minus_u)
     plt.savefig(FILE + '_eminusu{}.png'.format(i))
     plt.clf()
+    '''
+
+plt.savefig(FILE + '_all{}.png'.format(i))
+plt.clf()
