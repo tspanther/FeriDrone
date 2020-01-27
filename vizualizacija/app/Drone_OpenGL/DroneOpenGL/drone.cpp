@@ -361,7 +361,7 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::
     M = glm::translate(M, pos); // object move
     M = glm::rotate(M, v_yaw + float(glm::pi<double>()), glm::vec3(0, 1, 0)); // object rotate
     M = glm::rotate(M, v_pitch + float(glm::pi<double>() / 2), glm::vec3(0, 0, 1));
-    M = glm::scale(M, length * 5.0f * arrScale * glm::vec3(scale, scale, scale));
+    M = glm::scale(M, length * 2.0f * arrScale * glm::vec3(scale, scale, scale));
     PVM = P * V * M;
 
     gl->glBindVertexArray(VAO_ArrVEL);

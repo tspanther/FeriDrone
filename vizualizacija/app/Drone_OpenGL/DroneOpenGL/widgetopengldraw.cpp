@@ -221,7 +221,7 @@ void WidgetOpenGLDraw::stepAnimation(){
 }
 
 void WidgetOpenGLDraw::loadAnimation(){
-    std::ifstream f("../DroneOpenGL/flight.csv");
+    std::ifstream f("../DroneOpenGL/eggs.csv");
 
     int idx;
     double roll, pitch, yaw, pos_x, pos_y, pos_z;
