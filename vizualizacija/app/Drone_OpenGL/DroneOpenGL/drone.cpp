@@ -270,6 +270,7 @@ void drone::draw(glm::mat4 P, glm::mat4 V, unsigned int id_shader_program, glm::
     firstPCam.lookAt = glm::normalize(lookAtPoint - fpPosPoint);
     firstPCam.upVec = glm::normalize(upVecPoint - fpPosPoint);
     firstPCam.pos = fpPosPoint;
+    lockedOnCam.lookAt = pos - lockedOnCam.pos;
 
 
     /*
